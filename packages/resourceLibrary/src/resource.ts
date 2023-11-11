@@ -21,12 +21,19 @@ export class Resource {
 		this: This,
 		shape: Shape
 	) {
-		const extendedShape = this._resourceRawSchema.merge(z.object(shape))
+		return this.resourceMerge(z.object(shape))
+	}
+
+	public static resourceMerge<This extends typeof Resource, Object extends z.AnyZodObject>(
+		this: This,
+		object: Object
+	) {
+		const mergedShape = this._resourceRawSchema.merge(object)
 
 		// @ts-expect-error - Typescript thinks this is a mixin
 		return class extends this {
-			public static override _resourceRawSchema = extendedShape
-		} as ExtendedResource<This, typeof extendedShape>
+			public static override _resourceRawSchema = mergedShape
+		} as ExtendedResource<This, typeof mergedShape>
 	}
 }
 

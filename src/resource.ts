@@ -1,4 +1,4 @@
-import { object, z } from "zod"
+import { z } from "zod"
 
 export class Resource {
 	public constructor(input: any) {
@@ -12,7 +12,7 @@ export class Resource {
 	public static _resourceRawSchema = z.object({})
 
 	public static resourceSchema<This extends typeof Resource>(this: This) {
-		return this._resourceRawSchema.transform((object, _) => {
+		return this._resourceRawSchema.transform((object) => {
 			return new this(object) as InstanceType<This>
 		})
 	}
@@ -22,16 +22,21 @@ export class Resource {
 		shape: Shape
 	) {
 		const extendedShape = this._resourceRawSchema.merge(z.object(shape))
-		type ExtendedOutput = z.infer<typeof extendedShape>
 
-		// @ts-expect-error - Typescript complains about it being a Mixin
+		// @ts-expect-error - Typescript thinks this is a mixin
 		return class extends this {
 			public static override _resourceRawSchema = extendedShape
-		} as Omit<This, "new" | "_resourceRawSchema"> & {
-			new (input: ExtendedOutput): InstanceType<This> & ExtendedOutput
-			_resourceRawSchema: typeof extendedShape
-		}
+		} as ExtendedResource<This, typeof extendedShape>
 	}
+}
+
+// prettier-ignore
+type ExtendedResource<
+	T extends typeof Resource, 
+	Schema extends z.AnyZodObject
+> = Omit<T,"new" | "_resourceRawSchema"> & {
+	new (input: z.infer<Schema>): InstanceType<T> & z.infer<Schema>
+	_resourceRawSchema: Schema
 }
 
 class ClassExtension extends Resource.resourceExtend({ test: z.number() }) {

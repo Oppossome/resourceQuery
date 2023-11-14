@@ -1,49 +1,53 @@
 import { z } from "zod"
 
+import type { PrototypeCombine, Simplify } from "./types"
+import { ResourceManager } from "./manager"
+
+/** Resource
+================================= */
+
 export class Resource {
-	public constructor(input: any) {
-		Object.assign(this, input)
+	constructor(...input: any[]) {
+		//
 	}
 
-	/**
-	 * Static Methods
-	 */
+	/** Static Methods
+	================================= */
 
-	public static _resourceRawSchema = z.object({})
+	public static resourceManager = new ResourceManager({})
 
 	public static resourceSchema<This extends typeof Resource>(this: This) {
-		return this._resourceRawSchema.transform((object) => {
-			return new this(object) as InstanceType<This>
+		return z.any().transform((output, ctx) => {
+			const parsedOutput = this.resourceManager.schema.safeParse(output)
+
+			if (!parsedOutput.success) {
+				parsedOutput.error.issues.forEach(ctx.addIssue)
+				return z.NEVER
+			}
+
+			return new this(output) as InstanceType<This>
 		})
 	}
 
-	public static resourceExtend<This extends typeof Resource, Shape extends z.ZodRawShape>(
+	public static resourceExtend<This extends typeof Resource, NewShape extends z.ZodRawShape>(
 		this: This,
-		shape: Shape
+		newShape: NewShape
 	) {
-		return this.resourceMerge(z.object(shape))
-	}
+		type Manager = ResourceManager<This["resourceManager"]["shape"] & NewShape>
+		type ManagerOutput = z.infer<Manager["schema"]>
+		type PrototypeOutput = PrototypeCombine<This, ManagerOutput>
 
-	public static resourceMerge<This extends typeof Resource, Object extends z.AnyZodObject>(
-		this: This,
-		object: Object
-	) {
-		const mergedShape = this._resourceRawSchema.merge(object)
+		// Manually type the extended resourceManager due to weirdness with the generic class parameter
+		const resourceManager = this.resourceManager.extend(newShape) as Manager
 
-		// @ts-expect-error - Typescript thinks this is a mixin
 		return class extends this {
-			public static override _resourceRawSchema = mergedShape
-		} as ExtendedResource<This, typeof mergedShape>
+			public static override resourceManager = resourceManager
+		} as unknown as Omit<This, "resourceManager" | "prototype"> & {
+			new (input: ManagerOutput): PrototypeOutput
+			prototype: PrototypeOutput
+			resourceManager: Manager
+		}
 	}
-}
-
-// prettier-ignore
-type ExtendedResource<
-	T extends typeof Resource, 
-	Schema extends z.AnyZodObject
-> = Omit<T,"new" | "_resourceRawSchema"> & {
-	new (input: z.infer<Schema>): InstanceType<T> & z.infer<Schema>
-	_resourceRawSchema: Schema
 }
 
 class ClassExtension extends Resource.resourceExtend({ test: z.number() }) {
@@ -72,5 +76,7 @@ const test = z
 			multiplier: 3,
 		},
 	})
+
+new SecondClassExtension({ test: 3, multiplier: 3 })
 
 console.log(test.resource.sumTimesTwoTimesMultiplier)

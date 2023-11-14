@@ -10,13 +10,29 @@ const uriString = z.string().transform((str, ctx) => {
 	}
 })
 
+class Answer extends Resource.resourceExtend({
+	value: uriString,
+	isCorrect: z.boolean(),
+}) {
+	public static schema(isCorrect: boolean) {
+		return uriString.transform((value) => new Answer({ value, isCorrect }))
+	}
+}
+
 class Question extends Resource.resourceExtend({
 	category: uriString,
 	type: z.enum(["multiple", "boolean"]),
 	difficulty: z.enum(["easy", "medium", "hard"]),
 	question: uriString,
-	correct_answer: uriString,
-	incorrect_answers: z.array(uriString),
+	correct_answer: Answer.schema(true),
+	incorrect_answers: z.array(Answer.schema(false)),
 }) {
-	//
+	public get shuffledQuestions() {
+		const possibleAnswers = [this.correct_answer, ...this.incorrect_answers]
+		if (this.type === "multiple") return possibleAnswers.sort(() => 0.5 - Math.random())
+
+		// If it's a true or false question, organize the answers consistently
+		const isTrueCorrect = possibleAnswers[0].value === "True"
+		return isTrueCorrect ? possibleAnswers : possibleAnswers.reverse()
+	}
 }

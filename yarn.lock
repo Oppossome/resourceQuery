@@ -1499,6 +1499,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "resourcelibrary@workspace:packages/resourceLibrary"
   dependencies:
+    ts-toolbelt: ^9.6.0
     typescript: ^5.2.2
     zod: ^3.22.4
   languageName: unknown
@@ -1853,6 +1854,13 @@ __metadata:
   dependencies:
     is-number: ^7.0.0
   checksum: f76fa01b3d5be85db6a2a143e24df9f60dd047d151062d0ba3df62953f2f697b16fe5dad9b0ac6191c7efc7b1d9dcaa4b768174b7b29da89d4428e64bc0a20ed
+  languageName: node
+  linkType: hard
+
+"ts-toolbelt@npm:^9.6.0":
+  version: 9.6.0
+  resolution: "ts-toolbelt@npm:9.6.0"
+  checksum: 9f35fd95d895a5d32ea9fd2e532a695b0bae6cbff6832b77292efa188a0ed1ed6e54f63f74a8920390f3d909a7a3adb20a144686372a8e78b420246a9bd3d58a
   languageName: node
   linkType: hard
 

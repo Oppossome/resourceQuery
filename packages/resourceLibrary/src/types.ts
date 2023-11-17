@@ -1,9 +1,26 @@
-export type Simplify<T> = { [K in keyof T]: T[K] } & {}
+import { O, C } from "ts-toolbelt"
 
-export type Combine<T, E> = Simplify<Omit<T, keyof E> & E>
+// === Helpers
+
+type SimplifyFlat<T extends O.Object> = {
+	[K in keyof T]: T[K]
+} & {}
+
+type SimplifyDeep<T extends O.Object> = {
+	[K in keyof T]: T[K] extends O.Object ? SimplifyDeep<T> : T[K]
+} & {}
+
+export type Simplify<T extends O.Object, D extends "flat" | "deep" = "flat"> = {
+	flat: SimplifyFlat<T>
+	deep: SimplifyDeep<T>
+}[D]
 
 // prettier-ignore
-export type PrototypeCombine<T extends { prototype: any }, E> =
-  T extends { prototype: infer P }
-    ? Combine<P, E>
-    : never
+export type Extend<Object extends O.Object, Extension extends O.Object> = 
+	Simplify<Omit<Object, keyof Extension> & Extension>
+
+// prettier-ignore
+export type ExtendClass<C extends C.Class, Object extends O.Object> = 
+	Object extends C.Class<infer P, infer R> 
+		? Extend<C, Omit<Object, "new">> & C.Class<P, R>
+		: Extend<C, Object>

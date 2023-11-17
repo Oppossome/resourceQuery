@@ -1,23 +1,19 @@
 import { z } from "zod"
 
-import type { PrototypeCombine, Simplify } from "./types"
 import { ResourceManager } from "./manager"
-
-/** Resource
-================================= */
+import { ExtendClass } from "./types"
 
 export class Resource {
 	constructor(...input: any[]) {
 		//
 	}
 
-	/** Static Methods
-	================================= */
+	// === Static ===
 
-	public static resourceManager = new ResourceManager({})
+	static resourceManager = new ResourceManager({})
 
-	public static resourceSchema<This extends typeof Resource>(this: This) {
-		return z.any().transform((output, ctx) => {
+	static resourceSchema<This extends typeof Resource>(this: This) {
+		return z.unknown().transform((output, ctx) => {
 			const parsedOutput = this.resourceManager.schema.safeParse(output)
 
 			if (!parsedOutput.success) {
@@ -29,54 +25,22 @@ export class Resource {
 		})
 	}
 
-	public static resourceExtend<This extends typeof Resource, NewShape extends z.ZodRawShape>(
+	static resourceExtend<This extends typeof Resource, NewShape extends z.ZodRawShape>(
 		this: This,
 		newShape: NewShape
 	) {
+		// Manually type the manager class due to weirdness with the This type
 		type Manager = ResourceManager<This["resourceManager"]["shape"] & NewShape>
 		type ManagerOutput = z.infer<Manager["schema"]>
-		type PrototypeOutput = PrototypeCombine<This, ManagerOutput>
 
-		// Manually type the extended resourceManager due to weirdness with the generic class parameter
-		const resourceManager = this.resourceManager.extend(newShape) as Manager
-
+		// prettier-ignore
 		return class extends this {
-			public static override resourceManager = resourceManager
-		} as unknown as Omit<This, "resourceManager" | "prototype"> & {
-			new (input: ManagerOutput): PrototypeOutput
-			prototype: PrototypeOutput
+			static override resourceManager = super.resourceManager.extend(newShape)
+			
+		} as ExtendClass<This, {
+			new (input: ManagerOutput): This["prototype"] & ManagerOutput
+			prototype: This["prototype"] & ManagerOutput
 			resourceManager: Manager
-		}
+		}>
 	}
 }
-
-class ClassExtension extends Resource.resourceExtend({ test: z.number() }) {
-	public get timesTwo() {
-		return this.test * 2
-	}
-}
-
-class SecondClassExtension extends ClassExtension.resourceExtend({ multiplier: z.number() }) {
-	public get timesMultiplier() {
-		return this.test * this.multiplier
-	}
-
-	public get sumTimesTwoTimesMultiplier() {
-		return this.timesTwo + this.timesMultiplier
-	}
-}
-
-const test = z
-	.object({
-		resource: SecondClassExtension.resourceSchema(),
-	})
-	.parse({
-		resource: {
-			test: 2,
-			multiplier: 3,
-		},
-	})
-
-new SecondClassExtension({ test: 3, multiplier: 3 })
-
-console.log(test.resource.sumTimesTwoTimesMultiplier)

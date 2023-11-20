@@ -14,7 +14,7 @@ class Answer extends Resource.resourceExtend({
 	value: uriString,
 	isCorrect: z.boolean(),
 }) {
-	public static schema(isCorrect: boolean) {
+	static schema(isCorrect: boolean) {
 		return uriString.transform((value) => new Answer({ value, isCorrect }))
 	}
 }
@@ -27,7 +27,7 @@ class Question extends Resource.resourceExtend({
 	correct_answer: Answer.schema(true),
 	incorrect_answers: z.array(Answer.schema(false)),
 }) {
-	public get shuffledQuestions() {
+	get shuffledQuestions() {
 		const possibleAnswers = [this.correct_answer, ...this.incorrect_answers]
 		if (this.type === "multiple") return possibleAnswers.sort(() => 0.5 - Math.random())
 

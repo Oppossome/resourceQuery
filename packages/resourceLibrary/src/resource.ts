@@ -8,21 +8,21 @@ export class Resource {
 		//
 	}
 
+	/**
+	 * The method utilized to update a given resource, when it already exists.
+	 * @param input
+	 */
+	resourceUpdate(input: any) {
+		// The most simplistic implementation of this,
+		Object.assign(this, input)
+	}
+
 	// === Static ===
 
 	static resourceManager = new ResourceManager({})
 
 	static resourceSchema<This extends typeof Resource>(this: This) {
-		return z.unknown().transform((output, ctx) => {
-			const parsedOutput = this.resourceManager.schema.safeParse(output)
-
-			if (!parsedOutput.success) {
-				parsedOutput.error.issues.forEach(ctx.addIssue)
-				return z.NEVER
-			}
-
-			return new this(output) as InstanceType<This>
-		})
+		return this.resourceManager.resourceSchema(this)
 	}
 
 	static resourceExtend<This extends typeof Resource, NewShape extends z.ZodRawShape>(
@@ -31,14 +31,14 @@ export class Resource {
 	) {
 		// Manually type the manager class due to weirdness with the This type
 		type Manager = ResourceManager<This["resourceManager"]["shape"] & NewShape>
-		type ManagerOutput = z.infer<Manager["schema"]>
+		type ManagerOutput = z.infer<Manager["shapeSchema"]>
 
 		// prettier-ignore
 		return class extends this {
-			static override resourceManager = super.resourceManager.extend(newShape)
-			
+			static override resourceManager = super.resourceManager.shapeExtend(newShape)
+
 		} as ExtendClass<This, {
-			new (input: ManagerOutput): This["prototype"] & ManagerOutput
+			new (input: ManagerOutput): This["prototype"] & ManagerOutput 
 			prototype: This["prototype"] & ManagerOutput
 			resourceManager: Manager
 		}>

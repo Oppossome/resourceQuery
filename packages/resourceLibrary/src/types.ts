@@ -20,7 +20,7 @@ export type Extend<Object extends O.Object, Extension extends O.Object> =
 	Simplify<Omit<Object, keyof Extension> & Extension>
 
 // prettier-ignore
-export type ExtendClass<C extends C.Class, Object extends O.Object> = 
+export type ExtendClass<Class extends C.Class, Object extends O.Object> = 
 	Object extends C.Class<infer P, infer R> 
-		? Extend<C, Omit<Object, "new">> & C.Class<P, R>
-		: Extend<C, Object>
+		? Extend<Class, Omit<Object, "new">> & C.Class<P, R>
+		: Extend<Class, Object>

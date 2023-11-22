@@ -73,7 +73,11 @@ export class ResourceManager<Shape extends z.ZodRawShape> {
 			}
 
 			// Create an instance of the caller's resource, and type it accordingly
-			return this.updateOrCreateResource(resource, parseMetadata, parseResult.data)
+			return this.updateOrCreateResource(
+				resource,
+				parseMetadata,
+				parseResult.data
+			) as InstanceType<InputResource>
 		})
 	}
 

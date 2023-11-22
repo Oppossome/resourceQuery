@@ -4,8 +4,10 @@ import { ResourceManager } from "./manager"
 import { ExtendClass } from "./types"
 
 export class Resource {
+	#resourceId: string = ""
+
 	constructor(...input: any[]) {
-		//
+		this.resourceUpdate(input[0])
 	}
 
 	/**
@@ -44,3 +46,41 @@ export class Resource {
 		}>
 	}
 }
+
+// class PageInfo extends Resource.resourceExtend({
+// 	next_page: z.string(),
+// }) {
+// }
+
+// class Request extends Resource.resourceExtend({
+
+// }) {
+
+// 	public static makeRequest() {
+
+// 	}
+// }
+
+// class User extends Resource.resourceExtend({
+// 	name: z.string(),
+// 	email: z.string().email(),
+// }) {
+
+// 	public get displayName() {
+// 		return `${this.name} <${this.email}>`
+// 	}
+// }
+
+// class Post extends Resource.resourceExtend({
+// 	message: z.string()
+// }) {
+
+// }
+
+// class PostWithUser extends Post.resourceExtend({
+// 	user: User.resourceSchema(),
+// }) {
+// 	public get displayMessage() {
+// 		return `${this.user.displayName}: ${this.message}`
+// 	}
+// }

@@ -1,6 +1,6 @@
 {
 	"name": "resourcelibrary-monorepo",
-	"packageManager": "yarn@3.4.1",
+	"packageManager": "yarn@4.0.2",
 	"private": true,
 	"workspaces": [
 		"examples/*",

@@ -1,4 +1,4 @@
-name: CI/CD Pipeline
+name: Lint and Test
 on: [push]
 jobs:
   Run-Tests:

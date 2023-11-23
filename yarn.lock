@@ -637,8 +637,8 @@ __metadata:
   linkType: hard
 
 "@sveltejs/vite-plugin-svelte@npm:^2.4.2":
-  version: 2.5.2
-  resolution: "@sveltejs/vite-plugin-svelte@npm:2.5.2"
+  version: 2.5.3
+  resolution: "@sveltejs/vite-plugin-svelte@npm:2.5.3"
   dependencies:
     "@sveltejs/vite-plugin-svelte-inspector": "npm:^1.0.4"
     debug: "npm:^4.3.4"
@@ -650,7 +650,7 @@ __metadata:
   peerDependencies:
     svelte: ^3.54.0 || ^4.0.0 || ^5.0.0-next.0
     vite: ^4.0.0
-  checksum: ceede0f0cce947b2a6026328cec5b2ae004745a3d507a0527b0ff865e0b2ef539cf1c34bee9e7af94a998070b6ae22332932013dd215953f6d84e46494b54c93
+  checksum: 3817c4b18751250c0d7a1f1aa7adb227f06d6975122305696975f6d76f636555d98e502f7977a8b9b36e7f92650baca31ae5b33ed34c6e32606fdd81ba38f795
   languageName: node
   linkType: hard
 
@@ -683,9 +683,9 @@ __metadata:
   linkType: hard
 
 "@types/pug@npm:^2.0.6":
-  version: 2.0.9
-  resolution: "@types/pug@npm:2.0.9"
-  checksum: 30a37fcd5e662efbbe4a5471b77eafbf8309defb63f8219b06ceb28affb7d353a919d2bfb4da74491482b2b13632f858803b8b6c9f0beb3816dc11625642037f
+  version: 2.0.10
+  resolution: "@types/pug@npm:2.0.10"
+  checksum: b7331b87ceffe6a55b200d0fbfd3f4defdc6703ce21d25a8f3f01d9022a3b36ab0e2ee7d6eeb16b82b6375c0cadf35e1633219775237cb0c62e785fbd35df57c
   languageName: node
   linkType: hard
 
@@ -4183,8 +4183,8 @@ __metadata:
   linkType: hard
 
 "svelte-check@npm:^3.4.6":
-  version: 3.6.0
-  resolution: "svelte-check@npm:3.6.0"
+  version: 3.6.1
+  resolution: "svelte-check@npm:3.6.1"
   dependencies:
     "@jridgewell/trace-mapping": "npm:^0.3.17"
     chokidar: "npm:^3.4.1"
@@ -4198,7 +4198,7 @@ __metadata:
     svelte: ^3.55.0 || ^4.0.0-next.0 || ^4.0.0 || ^5.0.0-next.0
   bin:
     svelte-check: bin/svelte-check
-  checksum: f239d0a057b48edca963c8041d431acd8e5024616d254bba8e5e680833fb91364a3d8ffe19ca18a3f6858e613b6818bd15776b9bc3278313f2fe7b55eb292314
+  checksum: 173e06b21cc72d5248bdfd2fc5c2e473a3c26016f21ae419f17ca653103459c621db788d05307bb37ae14f3aa21ee1408e51457dab01dbf6f39da3560b81ebd9
   languageName: node
   linkType: hard
 
@@ -4212,8 +4212,8 @@ __metadata:
   linkType: hard
 
 "svelte-preprocess@npm:^5.1.0":
-  version: 5.1.0
-  resolution: "svelte-preprocess@npm:5.1.0"
+  version: 5.1.1
+  resolution: "svelte-preprocess@npm:5.1.1"
   dependencies:
     "@types/pug": "npm:^2.0.6"
     detect-indent: "npm:^6.1.0"
@@ -4253,13 +4253,13 @@ __metadata:
       optional: true
     typescript:
       optional: true
-  checksum: fd4c7fc9c08256c50a545aea87f9ce781f59519944e4ef60679fc5b0d5ce1c9c6d4db1c227e0704022b9ecbf25d58d5481018f9ffe4af59b77f880fd7d27af06
+  checksum: 11e725efb4a175a22fd0d4001f987806c585dc605e58927761728a055921553f72f5ccbd08f193579edcec917a3a30960e44b915ba477c94a6aeb3d5eeba28fe
   languageName: node
   linkType: hard
 
-"svelte4-example@workspace:examples/svelte-4":
+"svelte4-example@workspace:examples/svelte/opentdb-player":
   version: 0.0.0-use.local
-  resolution: "svelte4-example@workspace:examples/svelte-4"
+  resolution: "svelte4-example@workspace:examples/svelte/opentdb-player"
   dependencies:
     "@sveltejs/vite-plugin-svelte": "npm:^2.4.2"
     "@tsconfig/svelte": "npm:^5.0.0"
@@ -4274,8 +4274,8 @@ __metadata:
   linkType: soft
 
 "svelte@npm:^4.0.5":
-  version: 4.2.3
-  resolution: "svelte@npm:4.2.3"
+  version: 4.2.7
+  resolution: "svelte@npm:4.2.7"
   dependencies:
     "@ampproject/remapping": "npm:^2.2.1"
     "@jridgewell/sourcemap-codec": "npm:^1.4.15"
@@ -4290,7 +4290,7 @@ __metadata:
     locate-character: "npm:^3.0.0"
     magic-string: "npm:^0.30.4"
     periscopic: "npm:^3.1.0"
-  checksum: c7ceee57cf630e8f029a59d041bc8baee9f7d90af85849cfce2708d2335d66e85183a6bb4bed9671d101235689e9731c9d7698db5b777ffc1c353372b1b3c0f9
+  checksum: 9b856a70d7c62eb179f0ce255872603865d30a2935e30bfb0fa3bcc04cca68da67ad8c0dc460a6ba10b1a2b27ca949fdf0e2c67901106088b10b4fb86aacb3d5
   languageName: node
   linkType: hard
 
@@ -4467,17 +4467,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@npm:^5.0.3, typescript@npm:^5.2.2":
-  version: 5.2.2
-  resolution: "typescript@npm:5.2.2"
-  bin:
-    tsc: bin/tsc
-    tsserver: bin/tsserver
-  checksum: d65e50eb849bd21ff8677e5b9447f9c6e74777e346afd67754934264dcbf4bd59e7d2473f6062d9a015d66bd573311166357e3eb07fea0b52859cf9bb2b58555
-  languageName: node
-  linkType: hard
-
-"typescript@npm:^5.3.2":
+"typescript@npm:^5.0.3, typescript@npm:^5.2.2, typescript@npm:^5.3.2":
   version: 5.3.2
   resolution: "typescript@npm:5.3.2"
   bin:
@@ -4487,17 +4477,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@patch:typescript@npm%3A^5.0.3#optional!builtin<compat/typescript>, typescript@patch:typescript@npm%3A^5.2.2#optional!builtin<compat/typescript>":
-  version: 5.2.2
-  resolution: "typescript@patch:typescript@npm%3A5.2.2#optional!builtin<compat/typescript>::version=5.2.2&hash=f3b441"
-  bin:
-    tsc: bin/tsc
-    tsserver: bin/tsserver
-  checksum: f79cc2ba802c94c2b78dbb00d767a10adb67368ae764709737dc277273ec148aa4558033a03ce901406b35fddf4eac46dabc94a1e1d12d2587e2b9cfe5707b4a
-  languageName: node
-  linkType: hard
-
-"typescript@patch:typescript@npm%3A^5.3.2#optional!builtin<compat/typescript>":
+"typescript@patch:typescript@npm%3A^5.0.3#optional!builtin<compat/typescript>, typescript@patch:typescript@npm%3A^5.2.2#optional!builtin<compat/typescript>, typescript@patch:typescript@npm%3A^5.3.2#optional!builtin<compat/typescript>":
   version: 5.3.2
   resolution: "typescript@patch:typescript@npm%3A5.3.2#optional!builtin<compat/typescript>::version=5.3.2&hash=e012d7"
   bin:

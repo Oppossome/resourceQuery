@@ -4,8 +4,6 @@ import { ResourceManager } from "./manager"
 import { ExtendClass } from "./types"
 
 export class Resource {
-	#resourceId: string = ""
-
 	constructor(...input: any[]) {
 		this.resourceUpdate(input[0])
 	}

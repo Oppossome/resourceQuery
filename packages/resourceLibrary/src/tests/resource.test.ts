@@ -19,7 +19,7 @@ describe("Resource", () => {
 
 		test("Methods should be available on the extended class", () => {
 			const resource = new IdNameResource({ id: "1", name: "test" })
-			expect(resource.fancyName).toBe("name: test, id: 2")
+			expect(resource.fancyName).toBe("name: test, id: 1")
 		})
 	})
 })

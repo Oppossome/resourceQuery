@@ -59,9 +59,17 @@ export class Resource {
 		}>
 	}
 
+	/**
+	 * Utilized by {@link Resource}, {@link Resource._resourceUniqueId}, {@link Resource._resourceUpdatedOn}
+	 * to keep track of the current resource being updated.
+	 * @internal
+	 */
 	static _resourceUpdating: ResourceMetadata | undefined
 
-	/** Implementation of {@link uniqueID} */
+	/**
+	 * Implementation of {@link uniqueID} (Public API)
+	 * @internal
+	 */
 	static _resourceUniqueId<Schema extends z.ZodTypeAny>(schemaOf?: Schema) {
 		return z.unknown().transform((input, ctx) => {
 			if (!this._resourceUpdating) {
@@ -85,7 +93,10 @@ export class Resource {
 		})
 	}
 
-	/** Implementation of {@link updatedOn} */
+	/**
+	 * Implementation of {@link updatedOn} (Public API)
+	 * @internal
+	 */
 	static _resourceUpdatedOn<Schema extends z.ZodType<Date, any, any>>(schemaOf?: Schema) {
 		return z.unknown().transform((input, ctx) => {
 			if (!this._resourceUpdating) {
@@ -115,7 +126,6 @@ export class Resource {
  * @template {z.ZodTypeAny} Schema
  * @param {Schema | undefined} schemaOf
  * The schema to parse the input of, defaults to {@link z.string}.
- *
  */
 export const uniqueID = Resource._resourceUniqueId.bind(Resource)
 

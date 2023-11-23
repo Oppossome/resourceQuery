@@ -28,7 +28,7 @@ describe("Resource", () => {
 			}
 		}
 
-		it("should be possible to access methods ", () => {
+		it("should be possible to access ancestor methods", () => {
 			const resource = new IdNameResource({ id: 1, name: "test" })
 			expect(resource.fancyName).toBe("name: test, id: 1")
 		})

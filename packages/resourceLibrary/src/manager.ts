@@ -27,7 +27,7 @@ export class ResourceManager<Shape extends z.ZodRawShape> {
 	updateOrCreateResource<Input extends typeof Resource>(
 		resource: Input,
 		resourceMetadata: ResourceMetadata,
-		resourceData: any
+		resourceData: any,
 	) {
 		const resourceInfo = this.resourceStorage.get(resourceMetadata.id)
 		let resourceInstance = resourceInfo?.instance.deref()
@@ -76,7 +76,7 @@ export class ResourceManager<Shape extends z.ZodRawShape> {
 			return this.updateOrCreateResource(
 				resource,
 				parseMetadata,
-				parseResult.data
+				parseResult.data,
 			) as InstanceType<InputResource>
 		})
 	}

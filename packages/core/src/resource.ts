@@ -1,8 +1,8 @@
 import { z } from "zod"
 import { v4 as uuid } from "uuid"
 
-import { type ExtendClass } from "./types"
 import { ResourceManager } from "./manager"
+import { type ExtendClass } from "./helpers/types"
 
 export interface ResourceMetadata {
 	id: any

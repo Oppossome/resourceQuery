@@ -1,12 +1,7 @@
 import { z } from "zod"
 import { v4 as uuid } from "uuid"
 
-import { Resource } from "./resource"
-
-interface ResourceMetadata {
-	id: string
-	updatedOn?: Date
-}
+import { Resource, type ResourceMetadata } from "./resource"
 
 interface ResourceStorage {
 	instance: WeakRef<Resource>

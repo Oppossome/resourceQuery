@@ -532,6 +532,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@resourcequery/core@workspace:^, @resourcequery/core@workspace:packages/core":
+  version: 0.0.0-use.local
+  resolution: "@resourcequery/core@workspace:packages/core"
+  dependencies:
+    ts-toolbelt: "npm:^9.6.0"
+    typescript: "npm:^5.3.2"
+    vitest: "npm:1.0.0-beta.5"
+    zod: "npm:^3.22.4"
+  languageName: unknown
+  linkType: soft
+
 "@rollup/rollup-android-arm-eabi@npm:4.5.1":
   version: 4.5.1
   resolution: "@rollup/rollup-android-arm-eabi@npm:4.5.1"
@@ -3682,9 +3693,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"resourcelibrary-monorepo@workspace:.":
+"resourcequery-monorepo@workspace:.":
   version: 0.0.0-use.local
-  resolution: "resourcelibrary-monorepo@workspace:."
+  resolution: "resourcequery-monorepo@workspace:."
   dependencies:
     "@types/uuid": "npm:^9.0.7"
     "@typescript-eslint/eslint-plugin": "npm:^6.12.0"
@@ -3696,17 +3707,6 @@ __metadata:
     typescript: "npm:^5.3.2"
     uuid: "npm:^9.0.1"
     vitest: "npm:1.0.0-beta.5"
-  languageName: unknown
-  linkType: soft
-
-"resourcelibrary@workspace:^, resourcelibrary@workspace:packages/resourceLibrary":
-  version: 0.0.0-use.local
-  resolution: "resourcelibrary@workspace:packages/resourceLibrary"
-  dependencies:
-    ts-toolbelt: "npm:^9.6.0"
-    typescript: "npm:^5.3.2"
-    vitest: "npm:1.0.0-beta.5"
-    zod: "npm:^3.22.4"
   languageName: unknown
   linkType: soft
 
@@ -4263,9 +4263,9 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "svelte4-example@workspace:examples/svelte/opentdb-player"
   dependencies:
+    "@resourcequery/core": "workspace:^"
     "@sveltejs/vite-plugin-svelte": "npm:^2.4.2"
     "@tsconfig/svelte": "npm:^5.0.0"
-    resourcelibrary: "workspace:^"
     svelte: "npm:^4.0.5"
     svelte-check: "npm:^3.4.6"
     tslib: "npm:^2.6.0"

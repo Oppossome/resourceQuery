@@ -1,11 +1,22 @@
-import { test, describe, expect } from "vitest"
+import { describe, expect, it } from "vitest"
 import { z } from "zod"
 
 import { Resource } from "../resource"
 
 describe("Resource", () => {
+	it("Should strip _resourceMetadata", () => {
+		class SerializationTest extends Resource.resourceExtend({
+			id: z.coerce.number(),
+			name: z.string(),
+		}) {}
+
+		const resource = new SerializationTest({ id: 1, name: "test" })
+		expect(JSON.stringify(resource)).toBe('{"id":1,"name":"test"}')
+		expect(resource.toJSON()).toStrictEqual({ id: 1, name: "test" })
+	})
+
 	describe("resourceExtend", () => {
-		class IdResource extends Resource.resourceExtend({ id: z.string() }) {
+		class IdResource extends Resource.resourceExtend({ id: z.coerce.number() }) {
 			get fancyName() {
 				return `id: ${this.id}`
 			}
@@ -17,8 +28,8 @@ describe("Resource", () => {
 			}
 		}
 
-		test("Methods should be available on the extended class", () => {
-			const resource = new IdNameResource({ id: "1", name: "test" })
+		it("should be possible to access methods ", () => {
+			const resource = new IdNameResource({ id: 1, name: "test" })
 			expect(resource.fancyName).toBe("name: test, id: 1")
 		})
 	})

@@ -1,7 +1,7 @@
-name: Lint and Test
+name: CI Pipeline
 on: [push]
 jobs:
-  Run-Tests:
+  lint-and-test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

@@ -5,7 +5,7 @@ import { ExtendClass } from "./types"
 
 export class Resource {
 	constructor(...input: any[]) {
-		this.resourceUpdate(input[0])
+		this.resourceUpdate(input[0])  
 	}
 
 	/**

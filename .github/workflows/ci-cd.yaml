@@ -10,5 +10,7 @@ jobs:
           node-version: 20
           cache: yarn
           cache-dependency-path: yarn.lock
+      - name: Install Dependencies
+        run: yarn install
       - name: Run Tests
         run: yarn test

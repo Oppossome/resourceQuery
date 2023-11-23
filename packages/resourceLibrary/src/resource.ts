@@ -1,7 +1,7 @@
 import { z } from "zod"
 
+import { type ExtendClass } from "./types"
 import { ResourceManager } from "./manager"
-import { ExtendClass } from "./types"
 
 export class Resource {
 	constructor(...input: any[]) {

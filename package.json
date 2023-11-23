@@ -8,7 +8,7 @@
 	],
 	"scripts": {
 		"test": "yarn workspaces foreach -Ap run test --no-watch",
-		"lint": "eslint --ext .ts ./"
+		"lint": "eslint ."
 	},
 	"dependencies": {
 		"@types/uuid": "^9.0.7",

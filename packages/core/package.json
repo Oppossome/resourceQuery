@@ -1,7 +1,7 @@
 {
 	"type": "module",
 	"version": "0.0.0",
-	"name": "resourcelibrary",
+	"name": "@resourcequery/core",
 	"packageManager": "yarn@3.4.1",
 	"main": "./src/index.ts",
 	"scripts": {

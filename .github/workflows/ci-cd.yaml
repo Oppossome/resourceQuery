@@ -12,5 +12,7 @@ jobs:
           cache-dependency-path: yarn.lock
       - name: Install Dependencies
         run: yarn install
+      - name: Lint Code
+        run: yarn lint
       - name: Run Tests
         run: yarn test

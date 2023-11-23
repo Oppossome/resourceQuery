@@ -10,9 +10,5 @@
 	"dependencies": {
 		"ts-toolbelt": "^9.6.0",
 		"zod": "^3.22.4"
-	},
-	"devDependencies": {
-		"typescript": "^5.2.2",
-		"vitest": "1.0.0-beta.5"
 	}
 }

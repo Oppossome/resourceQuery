@@ -6,6 +6,9 @@
 		"examples/*",
 		"packages/*"
 	],
+	"scripts": {
+		"test": "yarn workspaces foreach -Ap run test --no-watch"
+	},
 	"dependencies": {
 		"@types/uuid": "^9.0.7",
 		"uuid": "^9.0.1"

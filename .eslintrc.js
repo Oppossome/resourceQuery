@@ -9,7 +9,11 @@ module.exports = {
 		es2021: true,
 		node: true,
 	},
-	extends: ["eslint:recommended", "plugin:@typescript-eslint/recommended"],
+	extends: [
+		"eslint:recommended",
+		"plugin:@typescript-eslint/recommended",
+		"plugin:import/recommended",
+	],
 	plugins: ["@typescript-eslint", "prettier"],
 	overrides: [
 		{
@@ -23,5 +27,12 @@ module.exports = {
 		"linebreak-style": ["error", "unix"],
 		"@typescript-eslint/no-explicit-any": "off",
 		"@typescript-eslint/ban-types": "off",
+		"import/no-unresolved": "off",
+		"import/order": [
+			"error",
+			{
+				groups: [["builtin", "external"], "internal", ["parent", "sibling", "index"]],
+			},
+		],
 	},
 }

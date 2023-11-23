@@ -10,7 +10,7 @@ const uriString = z.string().transform((str, ctx) => {
 	}
 })
 
-class Answer extends Resource.resourceExtend({
+export class Answer extends Resource.resourceExtend({
 	value: uriString,
 	isCorrect: z.boolean(),
 }) {
@@ -19,7 +19,7 @@ class Answer extends Resource.resourceExtend({
 	}
 }
 
-class Question extends Resource.resourceExtend({
+export class Question extends Resource.resourceExtend({
 	category: uriString,
 	type: z.enum(["multiple", "boolean"]),
 	difficulty: z.enum(["easy", "medium", "hard"]),

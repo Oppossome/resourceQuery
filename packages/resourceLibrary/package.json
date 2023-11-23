@@ -5,7 +5,7 @@
 	"packageManager": "yarn@3.4.1",
 	"main": "./src/index.ts",
 	"scripts": {
-		"test": "vitest --typecheck"
+		"test": "vitest --typecheck --no-watch && vitest"
 	},
 	"dependencies": {
 		"ts-toolbelt": "^9.6.0",

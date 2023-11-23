@@ -3704,6 +3704,8 @@ __metadata:
   resolution: "resourcelibrary@workspace:packages/resourceLibrary"
   dependencies:
     ts-toolbelt: "npm:^9.6.0"
+    typescript: "npm:^5.3.2"
+    vitest: "npm:1.0.0-beta.5"
     zod: "npm:^3.22.4"
   languageName: unknown
   linkType: soft

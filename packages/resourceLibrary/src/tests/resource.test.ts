@@ -1,4 +1,4 @@
-import { vi, test, describe, assert, expect } from "vitest"
+import { test, describe, expect } from "vitest"
 import { z } from "zod"
 
 import { Resource } from "../resource"

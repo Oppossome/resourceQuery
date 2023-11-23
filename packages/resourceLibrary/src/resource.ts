@@ -4,8 +4,6 @@ import { ResourceManager } from "./manager"
 import { ExtendClass } from "./types"
 
 export class Resource {
-	#resourceId: string = ""
-
 	constructor(...input: any[]) {
 		this.resourceUpdate(input[0])
 	}
@@ -29,7 +27,7 @@ export class Resource {
 
 	static resourceExtend<This extends typeof Resource, NewShape extends z.ZodRawShape>(
 		this: This,
-		newShape: NewShape
+		newShape: NewShape,
 	) {
 		// Manually type the manager class due to weirdness with the This type
 		type Manager = ResourceManager<This["resourceManager"]["shape"] & NewShape>

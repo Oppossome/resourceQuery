@@ -50,7 +50,7 @@ export class ResourceManager<Shape extends z.ZodRawShape> {
 
 	// === Schema ===
 
-	shapeSchema = z.object(this.shape)
+	shapeSchema = z.object(this.shape)  
 
 	/**
 	 * Given a input resource, it returns a schema that results in an instance of the caller.

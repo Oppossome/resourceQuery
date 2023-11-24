@@ -15,6 +15,16 @@ export type Simplify<T extends O.Object, D extends "flat" | "deep" = "flat"> = {
 	deep: SimplifyDeep<T>
 }[D]
 
+export type Entries<K extends string | symbol = string | symbol, V = any> = [K, V]
+
+// prettier-ignore
+export type FromEntries<T extends Entries[]> = {
+	[K in T[number] as K[1] extends never ? never : K[0]]: 
+		K[1] extends Entries[]
+			? FromEntries<K[1]>
+			: K[1]
+} & {}
+
 // prettier-ignore
 export type Extend<Object extends O.Object, Extension extends O.Object> = 
 	Simplify<Omit<Object, keyof Extension> & Extension>

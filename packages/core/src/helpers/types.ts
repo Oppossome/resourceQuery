@@ -1,5 +1,16 @@
 import type { C, O } from "ts-toolbelt"
 
+// === Code
+
+/**
+ * Checks if the input is an object.
+ * @param input The input to check.
+ * @returns Whether or not the input is an object.
+ */
+export function isObject(input: unknown): input is Record<string, unknown> {
+	return typeof input === "object" && input !== null
+}
+
 // === Helpers
 
 type SimplifyFlat<T extends O.Object> = {

@@ -2,7 +2,7 @@ import { z } from "zod"
 import { v4 as uuid } from "uuid"
 
 import { ResourceManager } from "./manager"
-import { type ExtendClass } from "./helpers/types"
+import { isObject, type ExtendClass } from "./helpers/types"
 
 export interface ResourceMetadata {
 	id: any
@@ -24,7 +24,27 @@ export class Resource {
 
 	private _resourceMetadata: ResourceMetadata = { id: uuid() }
 
-	toJSON() {
+	/**
+	 * Utilized by derived classes to define properties on the resource. This gives us
+	 * the ability to define getters and setters with custom functionality in derived classes.
+	 */
+	protected _resourceDefineProperties(shape: z.ZodRawShape) {
+		const propValues: Record<string, unknown> = {}
+
+		for (const key in shape) {
+			/**
+			 * Define a getter and setter for each key in the shape.
+			 * The setter will parse the input and assign it to the propValues object.
+			 *  - The exception should be caught by the request object, and it will error out the request.
+			 */
+			Object.defineProperty(this, key, {
+				get: () => propValues[key],
+				set: (value) => (propValues[key] = shape[key].parse(value)),
+			})
+		}
+	}
+
+	toJSON(): object {
 		// Destructure the _resourceMetadata from the rest of the object
 		// eslint-disable-next-line @typescript-eslint/no-unused-vars
 		const { _resourceMetadata, ...rest } = this
@@ -36,7 +56,9 @@ export class Resource {
 	static resourceManager = new ResourceManager({})
 
 	static resourceSchema<This extends typeof Resource>(this: This) {
-		return this.resourceManager.resourceSchema(this)
+		return z.record(z.unknown()).transform((input) => new this(input) as InstanceType<This>)
+
+		return z.object({}).transform((input) => new this(input) as InstanceType<This>)
 	}
 
 	static resourceExtend<This extends typeof Resource, NewShape extends z.ZodRawShape>(
@@ -47,15 +69,45 @@ export class Resource {
 		type Manager = ResourceManager<This["resourceManager"]["shape"] & NewShape>
 		type ManagerOutput = z.infer<Manager["shapeSchema"]>
 
-		// prettier-ignore
-		return class extends this {
-			static override resourceManager = super.resourceManager.shapeExtend(newShape)
+		return class Extension extends this {
+			public constructor(...input: any[]) {
+				super(...input)
 
-		} as ExtendClass<This, {
-			new (input: ManagerOutput): This["prototype"] & ManagerOutput 
-			prototype: This["prototype"] & ManagerOutput
-			resourceManager: Manager
-		}>
+				const objectInput: unknown = input[0] // Grab first parameter, ensure it's an object
+				if (!isObject(objectInput)) throw new Error("Expected input to be an object")
+				this._resourceDefineProperties(newShape) // Define the properties on the resource
+
+				// Update the current resource being updated.
+				const lastResourcesMetadata = Resource._resourceUpdating
+				Resource._resourceUpdating = this._resourceMetadata
+
+				// @ts-expect-error - We're assigning parsed values
+				for (const key in newShape) this[key] = objectInput[key]
+				Resource._resourceUpdating = lastResourcesMetadata // Put back the last resource's metadata
+
+				const storedResources = Extension.resourceManager.resourceStorage
+				const storedResource = storedResources.get(this._resourceMetadata.id)?.deref()
+
+				// If the resource doesn't exist, store it and return
+				if (!storedResource) {
+					storedResources.set(this._resourceMetadata.id, new WeakRef(this))
+					return
+				}
+
+				// @ts-expect-error - Assigning keys we know exist in the original resource.
+				for (const key in newShape) storedResource[key] = this[key]
+				return storedResource
+			}
+
+			static override resourceManager = super.resourceManager.shapeExtend(newShape)
+		} as ExtendClass<
+			This,
+			{
+				new (input: ManagerOutput): This["prototype"] & ManagerOutput
+				prototype: This["prototype"] & ManagerOutput
+				resourceManager: Manager
+			}
+		>
 	}
 
 	/**

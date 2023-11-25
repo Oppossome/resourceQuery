@@ -29,7 +29,8 @@ describe("Resource", () => {
 		}
 
 		it("should be possible to access ancestor methods", () => {
-			const resource = new IdNameResource({ id: 1, name: "test" })
+			// Ensures that the parsing works as expected
+			const resource = IdNameResource.resourceSchema().parse({ id: 1, name: "test" })
 			expect(resource.fancyName).toBe("name: test, id: 1")
 		})
 	})

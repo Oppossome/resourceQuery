@@ -1,4 +1,4 @@
-import { O, C } from "ts-toolbelt"
+import type { C, O } from "ts-toolbelt"
 
 // === Helpers
 

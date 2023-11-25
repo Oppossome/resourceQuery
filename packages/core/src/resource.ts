@@ -19,7 +19,6 @@ export class Resource {
 	 * @param input
 	 */
 	resourceUpdate(input: any) {
-		// The most simplistic implementation of this,
 		Object.assign(this, input)
 	}
 

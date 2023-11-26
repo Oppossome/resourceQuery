@@ -10,16 +10,8 @@ export interface ResourceMetadata {
 }
 
 export class Resource {
-	constructor(...input: any[]) {
-		this.resourceUpdate(input[0])
-	}
-
-	/**
-	 * The method utilized to update a given resource, when it already exists.
-	 * @param input
-	 */
-	resourceUpdate(input: any) {
-		Object.assign(this, input)
+	constructor(..._params: any[]) {
+		// Do absolutely nothing
 	}
 
 	private _resourceMetadata: ResourceMetadata = { id: uuid() }
@@ -39,12 +31,24 @@ export class Resource {
 			 */
 			Object.defineProperty(this, key, {
 				get: () => propValues[key],
-				set: (value) => (propValues[key] = shape[key].parse(value)),
+				set: (value) => {
+					// Because we're parsing the input
+					const lastResourcesMetadata = Resource._resourceUpdating
+					Resource._resourceUpdating = this._resourceMetadata
+
+					// Safely parse the input so we can return _resourceUpdating to its original value
+					const parsedValue = shape[key].safeParse(value)
+					Resource._resourceUpdating = lastResourcesMetadata
+
+					// If the input is invalid, throw the error, otherwise assign the parsed value to the propValues object
+					if (!parsedValue.success) throw parsedValue.error
+					propValues[key] = parsedValue.data
+				},
 			})
 		}
 	}
 
-	toJSON(): object {
+	toJSON(): Record<string, unknown> {
 		// Destructure the _resourceMetadata from the rest of the object
 		// eslint-disable-next-line @typescript-eslint/no-unused-vars
 		const { _resourceMetadata, ...rest } = this
@@ -57,8 +61,6 @@ export class Resource {
 
 	static resourceSchema<This extends typeof Resource>(this: This) {
 		return z.record(z.unknown()).transform((input) => new this(input) as InstanceType<This>)
-
-		return z.object({}).transform((input) => new this(input) as InstanceType<This>)
 	}
 
 	static resourceExtend<This extends typeof Resource, NewShape extends z.ZodRawShape>(
@@ -77,13 +79,8 @@ export class Resource {
 				if (!isObject(objectInput)) throw new Error("Expected input to be an object")
 				this._resourceDefineProperties(newShape) // Define the properties on the resource
 
-				// Update the current resource being updated.
-				const lastResourcesMetadata = Resource._resourceUpdating
-				Resource._resourceUpdating = this._resourceMetadata
-
 				// @ts-expect-error - We're assigning parsed values
 				for (const key in newShape) this[key] = objectInput[key]
-				Resource._resourceUpdating = lastResourcesMetadata // Put back the last resource's metadata
 
 				const storedResources = Extension.resourceManager.resourceStorage
 				const storedResource = storedResources.get(this._resourceMetadata.id)?.deref()
@@ -100,6 +97,13 @@ export class Resource {
 			}
 
 			static override resourceManager = super.resourceManager.shapeExtend(newShape)
+
+			public override toJSON() {
+				const json = super.toJSON()
+				// @ts-expect-error - Assigning keys we know exist in the resource.
+				for (const key in newShape) json[key] = this[key]
+				return json
+			}
 		} as ExtendClass<
 			This,
 			{
@@ -178,7 +182,7 @@ export class Resource {
  * @param {Schema | undefined} schemaOf
  * The schema to parse the input of, defaults to {@link z.string}.
  */
-export const uniqueID = Resource._resourceUniqueId.bind(Resource)
+export const uniqueId = Resource._resourceUniqueId.bind(Resource)
 
 /**
  * Returns a schema that assigns the parsed output to the current {@link Resource._resourceUpdating}

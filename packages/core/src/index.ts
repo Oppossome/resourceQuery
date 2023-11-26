@@ -1,1 +1,1 @@
-export { Resource, uniqueID, updatedOn } from "./resource"
+export { Resource, uniqueId, updatedOn } from "./resource"

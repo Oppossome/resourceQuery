@@ -1,4 +1,15 @@
-import { O, C } from "ts-toolbelt"
+import type { C, O } from "ts-toolbelt"
+
+// === Code
+
+/**
+ * Checks if the input is an object.
+ * @param input The input to check.
+ * @returns Whether or not the input is an object.
+ */
+export function isObject(input: unknown): input is Record<string, unknown> {
+	return typeof input === "object" && input !== null
+}
 
 // === Helpers
 
@@ -14,6 +25,16 @@ export type Simplify<T extends O.Object, D extends "flat" | "deep" = "flat"> = {
 	flat: SimplifyFlat<T>
 	deep: SimplifyDeep<T>
 }[D]
+
+export type Entries<K extends string | symbol = string | symbol, V = any> = [K, V]
+
+// prettier-ignore
+export type FromEntries<T extends Entries[]> = {
+	[K in T[number] as K[1] extends never ? never : K[0]]: 
+		K[1] extends Entries[]
+			? FromEntries<K[1]>
+			: K[1]
+} & {}
 
 // prettier-ignore
 export type Extend<Object extends O.Object, Extension extends O.Object> = 

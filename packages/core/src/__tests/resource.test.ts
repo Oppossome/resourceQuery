@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest"
+import { v4 as uuid } from "uuid"
 import { z } from "zod"
 
 import { Resource, uniqueId } from "../resource"
@@ -14,9 +15,9 @@ class User extends Resource.resourceExtend({
 
 describe("Resource", () => {
 	it("should when possible, return an updated cached resource", () => {
-		const firstUser = new User({ id: "1234", name: "Test" })
-		const secondUser = new User({ id: "12345", name: "Test2" })
-		const thirdUser = new User({ id: "1234", name: "Test3" })
+		const firstUser = new User({ id: "duplicate", name: "Test" })
+		const secondUser = new User({ id: uuid(), name: "Test2" })
+		const thirdUser = new User({ id: "duplicate", name: "Test3" })
 
 		expect(firstUser).toBe(thirdUser)
 		expect(firstUser.name).toBe("Test3")
@@ -32,10 +33,20 @@ describe("Resource", () => {
 
 		const test = Test.resourceSchema().parse({ id: "123", name: "Test", content: "Hello world!" })
 		expect(test.message).toBe("<@123>(Test): Hello world!")
-		expect(test.toJSON(), "Private fields should be eliminated").toStrictEqual({
+		expect(test.toJSON()).toStrictEqual({
 			content: "Hello world!",
 			name: "Test",
 			id: "123",
 		})
+	})
+
+	it("should throw an error when a property is set to an invalid value", () => {
+		const testObj = new User({ id: uuid(), name: "Test" })
+
+		// @ts-expect-error - This should throw an error
+		expect(() => (testObj.name = 123)).toThrowError()
+
+		// @ts-expect-error - This should throw an error
+		expect(() => new User({ id: 123, name: 123 })).toThrowError()
 	})
 })

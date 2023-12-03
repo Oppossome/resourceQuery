@@ -4,11 +4,15 @@
 	"name": "@resourcequery/svelte",
 	"packageManager": "yarn@4.0.2",
 	"main": "./src/index.ts",
+	"scripts": {
+		"test": "vitest --typecheck --no-watch && vitest",
+		"coverage": "vitest run --coverage"
+	},
 	"dependencies": {
 		"@resourcequery/core": "workspace:^",
 		"svelte": "^4.2.8"
 	},
 	"devDependencies": {
-		"vitest": "^0.34.6"
+		"vitest": "1.0.0-beta.5"
 	}
 }

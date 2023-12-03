@@ -1,0 +1,11 @@
+{
+	"type": "module",
+	"version": "0.0.0",
+	"name": "@resourcequery/svelte",
+	"packageManager": "yarn@4.0.2",
+	"main": "./src/index.ts",
+	"dependencies": {
+		"@resourcequery/core": "workspace:^",
+		"svelte": "^4.2.8"
+	}
+}

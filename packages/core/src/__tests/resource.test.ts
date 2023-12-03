@@ -48,5 +48,8 @@ describe("Resource", () => {
 
 		// @ts-expect-error - This should throw an error
 		expect(() => new User({ id: 123, name: 123 })).toThrowError()
+
+		// @ts-expect-error - This should throw an error
+		expect(() => new User(123)).toThrowError()
 	})
 })

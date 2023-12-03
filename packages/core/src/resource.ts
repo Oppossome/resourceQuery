@@ -14,38 +14,36 @@ export class Resource {
 		// Do absolutely nothing
 	}
 
-	private _resourceMetadata: ResourceMetadata = { id: uuid() }
+	/**
+	 * Metadata about the resource.
+	 * @internal
+	 */
+	_resourceMetadata: ResourceMetadata = { id: uuid() }
 
 	/**
 	 * Utilized by derived classes to define properties on the resource. This gives us
 	 * the ability to define getters and setters with custom functionality in derived classes.
+	 * @internal
 	 */
-	protected _resourceDefineProperties(shape: z.ZodRawShape) {
-		const propValues: Record<string, unknown> = {}
+	protected _resourceDefineProperty(key: string, schema: z.ZodTypeAny) {
+		let propValue: unknown
 
-		for (const key in shape) {
-			/**
-			 * Define a getter and setter for each key in the shape.
-			 * The setter will parse the input and assign it to the propValues object.
-			 *  - The exception should be caught by the request object, and it will error out the request.
-			 */
-			Object.defineProperty(this, key, {
-				get: () => propValues[key],
-				set: (value) => {
-					// Because we're parsing the input
-					const lastResourcesMetadata = Resource._resourceUpdating
-					Resource._resourceUpdating = this._resourceMetadata
+		Object.defineProperty(this, key, {
+			get: () => propValue,
+			set: (value: unknown) => {
+				// Because we're parsing the input
+				const lastResourcesMetadata = Resource._resourceUpdating
+				Resource._resourceUpdating = this._resourceMetadata
 
-					// Safely parse the input so we can return _resourceUpdating to its original value
-					const parsedValue = shape[key].safeParse(value)
-					Resource._resourceUpdating = lastResourcesMetadata
+				// Safely parse the input so we can return _resourceUpdating to its original value
+				const parsedValue = schema.safeParse(value)
+				Resource._resourceUpdating = lastResourcesMetadata
 
-					// If the input is invalid, throw the error, otherwise assign the parsed value to the propValues object
-					if (!parsedValue.success) throw parsedValue.error
-					propValues[key] = parsedValue.data
-				},
-			})
-		}
+				// If the input is invalid, throw the error, otherwise assign the parsed value to the propValues object
+				if (!parsedValue.success) throw parsedValue.error
+				propValue = parsedValue.data
+			},
+		})
 	}
 
 	toJSON(): Record<string, unknown> {
@@ -77,7 +75,7 @@ export class Resource {
 
 				const objectInput: unknown = input[0] // Grab first parameter, ensure it's an object
 				if (!isObject(objectInput)) throw new Error("Expected input to be an object")
-				this._resourceDefineProperties(newShape) // Define the properties on the resource
+				for (const key in newShape) this._resourceDefineProperty(key, newShape[key]) // Define properties
 
 				// @ts-expect-error - We're assigning parsed values
 				for (const key in newShape) this[key] = objectInput[key]

@@ -11,7 +11,7 @@
 		"check": "svelte-check --tsconfig ./tsconfig.json"
 	},
 	"dependencies": {
-		"@resourcequery/core": "workspace:^",
+		"@resourcequery/svelte": "workspace:^",
 		"zod": "^3.22.4"
 	},
 	"devDependencies": {

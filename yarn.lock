@@ -775,6 +775,15 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@resourcequery/svelte@workspace:^, @resourcequery/svelte@workspace:packages/svelte":
+  version: 0.0.0-use.local
+  resolution: "@resourcequery/svelte@workspace:packages/svelte"
+  dependencies:
+    "@resourcequery/core": "workspace:^"
+    svelte: "npm:^4.2.8"
+  languageName: unknown
+  linkType: soft
+
 "@rollup/rollup-android-arm-eabi@npm:4.5.1":
   version: 4.5.1
   resolution: "@rollup/rollup-android-arm-eabi@npm:4.5.1"
@@ -4744,7 +4753,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "svelte4-example@workspace:examples/svelte/opentdb-player"
   dependencies:
-    "@resourcequery/core": "workspace:^"
+    "@resourcequery/svelte": "workspace:^"
     "@sveltejs/vite-plugin-svelte": "npm:^2.4.2"
     "@tsconfig/svelte": "npm:^5.0.0"
     svelte: "npm:^4.0.5"
@@ -4797,15 +4806,6 @@ __metadata:
   checksum: 60d1ee8a67bf4d640eb417a36987d14169e4a8328e7f836917c53c75c8138f1e0e73900891cf95a35f456e112ca55778695e3291c4fd4ba60f22e36f63fc1537
   languageName: node
   linkType: hard
-
-"svelte@workspace:packages/svelte":
-  version: 0.0.0-use.local
-  resolution: "svelte@workspace:packages/svelte"
-  dependencies:
-    "@resourcequery/core": "workspace:^"
-    svelte: "npm:^4.2.8"
-  languageName: unknown
-  linkType: soft
 
 "synckit@npm:^0.8.5":
   version: 0.8.5

@@ -1,4 +1,4 @@
-import { Resource } from "@resourcequery/core"
+import { Resource } from "@resourcequery/svelte"
 import { z } from "zod"
 
 const uriString = z.string().transform((str, ctx) => {

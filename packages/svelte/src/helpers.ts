@@ -3,7 +3,7 @@ import { Writable, writable } from "svelte/store"
 import { z } from "zod"
 
 export function useDebouncedCallback(callback: () => void, ms: number = 250) {
-	let timeout: number | undefined
+	let timeout: NodeJS.Timeout | undefined
 	return () => {
 		if (timeout) clearTimeout(timeout)
 		timeout = setTimeout(callback, ms)
@@ -27,6 +27,11 @@ export function applySvelteMixin<Resource extends typeof CoreResource>(input: Re
 		protected _dispatchUpdate? = useDebouncedCallback(() => {
 			this._resourceStore.set(this)
 		})
+
+		override toJSON(): Record<string, unknown> {
+			const { _resourceStore, ...rest } = super.toJSON()
+			return rest
+		}
 
 		/**
 		 * Override the default _resourceDefineProperty function to update the store when a property is set.

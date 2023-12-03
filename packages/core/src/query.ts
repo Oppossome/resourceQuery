@@ -14,13 +14,13 @@ interface QueryOptions<CacheKey, Result> {
  * @template Result The type of the result.
  */
 export class Query<CacheKey, Result> extends Resource.resourceExtend({
-	id: uniqueId(z.unknown()),
+	cacheKey: uniqueId(z.unknown()),
 	result: z.any(),
 	error: z.any(),
 }) {
 	constructor(protected options: QueryOptions<CacheKey, Result>) {
 		// If the cache key isn't provided, generate a random one.
-		super({ id: options.cacheKey ?? uuid() })
+		super({ cacheKey: options.cacheKey ?? uuid() })
 		this.invalidate() // Kick off the query.
 	}
 

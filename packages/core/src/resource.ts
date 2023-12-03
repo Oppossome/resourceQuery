@@ -62,10 +62,55 @@ export class Resource {
 
 	static resourceManager = new ResourceManager({})
 
+	/**
+	 * Returns a zod schema that parses the input into this resource.
+	 * ```ts
+	 * class User extends Resource.resourceExtend({
+	 * 	id: uniqueId(z.string()),
+	 * 	discriminator: z.number(),
+	 * 	name: z.string(),
+	 * }) {
+	 * 	// ...
+	 * }
+	 *
+	 * const messageSchema = z.object({
+	 * 	user: User.resourceSchema(),
+	 * 	content: z.string(),
+	 * })
+	 *
+	 * const message = messageSchema.parse({
+	 * 	user: { id: "123", discriminator: 123, name: "Test" },
+	 * 	content: "Hello, world!"
+	 * })
+	 * ```
+	 */
 	static resourceSchema<This extends typeof Resource>(this: This) {
 		return z.record(z.unknown()).transform((input) => new this(input) as InstanceType<This>)
 	}
 
+	/**
+	 * Extends the current resource with the provided shape.
+	 * @example
+	 * ```ts
+	 * class User extends Resource.resourceExtend({
+	 * 	id: uniqueId(z.string()),
+	 * 	discriminator: z.number(),
+	 * 	name: z.string(),
+	 * }) {
+	 * 	public get displayName() {
+	 * 		return `${this.name}#${this.discriminator}`
+	 * 	}
+	 * }
+	 *
+	 * class Admin extends User.resourceExtend({
+	 * 	permissions: z.array(z.string()),
+	 * }) {
+	 * 	public get adminDisplayName() {
+	 *		return `${this.displayName} (${this.permissions.length} permissions)`
+	 * 	}
+	 * }
+	 * ```
+	 */
 	static resourceExtend<This extends typeof Resource, NewShape extends z.ZodRawShape>(
 		this: This,
 		newShape: NewShape,

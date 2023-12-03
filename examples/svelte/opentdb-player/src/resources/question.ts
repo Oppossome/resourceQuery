@@ -1,5 +1,6 @@
 import { Resource, Query } from "@resourcequery/svelte"
 import { z } from "zod"
+import { wait } from "./helpers"
 
 const uriString = z.string().transform((str, ctx) => {
 	try {
@@ -27,7 +28,7 @@ export class Question extends Resource.resourceExtend({
 	correct_answer: Answer.schema(true),
 	incorrect_answers: z.array(Answer.schema(false)),
 }) {
-	get shuffledQuestions() {
+	get shuffledAnswers() {
 		const possibleAnswers = [this.correct_answer, ...this.incorrect_answers]
 		if (this.type === "multiple") return possibleAnswers.sort(() => 0.5 - Math.random())
 
@@ -44,7 +45,8 @@ export class Question extends Resource.resourceExtend({
 					results: z.array(Question.resourceSchema()),
 				})
 
-				const query = await fetch("https://opentdb.com/api.php?amount=10&encode=url3986")
+				await wait(5000) // So we respect the rate limit
+				const query = await fetch("https://opentdb.com/api.php?amount=10")
 				return schema.parse(await query.json()).results
 			},
 		})

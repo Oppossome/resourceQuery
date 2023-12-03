@@ -3,7 +3,7 @@ import { Writable, writable } from "svelte/store"
 import { z } from "zod"
 
 export function useDebouncedCallback(callback: () => void, ms: number = 250) {
-	let timeout: NodeJS.Timeout | undefined
+	let timeout: ReturnType<typeof setTimeout> | undefined
 	return () => {
 		if (timeout) clearTimeout(timeout)
 		timeout = setTimeout(callback, ms)

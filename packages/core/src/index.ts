@@ -1,2 +1,2 @@
 export { Resource, uniqueId, updatedOn } from "./resource"
-export { QueryResource } from "./query"
+export { Query } from "./query"

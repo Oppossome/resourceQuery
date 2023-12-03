@@ -1,10 +1,10 @@
 import { Resource as CoreResource } from "@resourcequery/core"
-import { writable } from "svelte/store"
+import { Writable, writable } from "svelte/store"
 import { z } from "zod"
 
-export function useDebouncedTimeout(ms: number) {
+export function useDebouncedCallback(callback: () => void, ms: number = 250) {
 	let timeout: number | undefined
-	return (callback: () => void) => {
+	return () => {
 		if (timeout) clearTimeout(timeout)
 		timeout = setTimeout(callback, ms)
 	}
@@ -16,15 +16,17 @@ export function applySvelteMixin<Resource extends typeof CoreResource>(input: Re
 		 * A store that contains the resource. This allows users to subscribe to changes in the resource.
 		 * @internal
 		 */
-		protected _resourceStore = writable(this)
+		protected _resourceStore: Writable<this> = writable(this)
 
 		subscribe = this._resourceStore.subscribe
 
 		/**
-		 * A function that allows us to debounce the update function to prevent unnecessary updates.
+		 * A function that dispatches an update to the underlying store.
 		 * @internal
 		 */
-		protected _resourceDebouncedTimeout = useDebouncedTimeout(100)
+		protected _dispatchUpdate? = useDebouncedCallback(() => {
+			this._resourceStore.set(this)
+		})
 
 		/**
 		 * Override the default _resourceDefineProperty function to update the store when a property is set.
@@ -46,8 +48,8 @@ export function applySvelteMixin<Resource extends typeof CoreResource>(input: Re
 
 					// If the input is invalid, throw the error, otherwise assign the parsed value to the propValues object
 					if (!parsedValue.success) throw parsedValue.error
-					this._resourceDebouncedTimeout(() => this._resourceStore.set(this))
 					propValue = parsedValue.data
+					this._dispatchUpdate?.() // Dispatch an update to the store, if it exists.
 				},
 			})
 		}

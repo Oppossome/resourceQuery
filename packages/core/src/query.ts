@@ -8,29 +8,12 @@ interface QueryOptions<CacheKey, Result> {
 	cacheKey?: CacheKey
 }
 
-class QueryBuilder<Query extends typeof QueryResource, CacheKey, Result> {
-	constructor(
-		protected resource: typeof QueryResource,
-		protected options: QueryOptions<CacheKey, Result>,
-	) {
-		//
-	}
-
-	withCacheKey<NewCacheKey>(cacheKey: NewCacheKey): QueryBuilder<Query, NewCacheKey, Result> {
-		return new QueryBuilder(this.resource, { ...this.options, cacheKey })
-	}
-
-	execute() {
-		return new this.resource(this.options)
-	}
-}
-
 /**
- * The QueryResource is a resource that is used to query data from an external source.
+ * The Query is a resource that is used to query data from an external source.
  * @template CacheKey The type of the cache key.
  * @template Result The type of the result.
  */
-export class QueryResource<CacheKey, Result> extends Resource.resourceExtend({
+export class Query<CacheKey, Result> extends Resource.resourceExtend({
 	id: uniqueId(z.unknown()),
 	result: z.any(),
 	error: z.any(),
@@ -79,15 +62,5 @@ export class QueryResource<CacheKey, Result> extends Resource.resourceExtend({
 			else if (typeof error === "string") this.result = new Error(error)
 			else this.result = new Error("An unknown error occurred.")
 		}
-	}
-
-	/**
-	 * This method is used to build a query resource.
-	 */
-	static build<This extends typeof QueryResource, Result>(
-		this: This,
-		query: () => Promise<Result>,
-	): QueryBuilder<This, undefined, Result> {
-		return new QueryBuilder(this, { query })
 	}
 }

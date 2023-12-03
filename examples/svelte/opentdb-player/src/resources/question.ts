@@ -1,4 +1,4 @@
-import { Resource, query } from "@resourcequery/svelte"
+import { Resource, Query } from "@resourcequery/svelte"
 import { z } from "zod"
 
 const uriString = z.string().transform((str, ctx) => {
@@ -37,14 +37,16 @@ export class Question extends Resource.resourceExtend({
 	}
 
 	static fetch() {
-		return query(async () => {
-			const schema = z.object({
-				response_code: z.literal(0),
-				results: z.array(Question.resourceSchema()),
-			})
+		return new Query({
+			query: async () => {
+				const schema = z.object({
+					response_code: z.literal(0),
+					results: z.array(Question.resourceSchema()),
+				})
 
-			const query = await fetch("https://opentdb.com/api.php?amount=10&encode=url3986")
-			return schema.parse(await query.json()).results
-		}).execute()
+				const query = await fetch("https://opentdb.com/api.php?amount=10&encode=url3986")
+				return schema.parse(await query.json()).results
+			},
+		})
 	}
 }

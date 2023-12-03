@@ -25,7 +25,11 @@ export class Resource {
 	 * the ability to define getters and setters with custom functionality in derived classes.
 	 * @internal
 	 */
-	protected _resourceDefineProperty(key: string, schema: z.ZodTypeAny) {
+	protected _resourceDefineProperty(
+		key: string,
+		schema: z.ZodTypeAny,
+		set?: (value: unknown) => void,
+	) {
 		let propValue: unknown
 
 		Object.defineProperty(this, key, {
@@ -42,6 +46,7 @@ export class Resource {
 				// If the input is invalid, throw the error, otherwise assign the parsed value to the propValues object
 				if (!parsedValue.success) throw parsedValue.error
 				propValue = parsedValue.data
+				set?.(propValue)
 			},
 		})
 	}
@@ -83,15 +88,14 @@ export class Resource {
 				const storedResources = Extension.resourceManager.resourceStorage
 				const storedResource = storedResources.get(this._resourceMetadata.id)?.deref()
 
-				// If the resource doesn't exist, store it and return
-				if (!storedResource) {
-					storedResources.set(this._resourceMetadata.id, new WeakRef(this))
-					return
+				// If the resource already exists, update the values and return it
+				if (storedResource) {
+					// @ts-expect-error - Assigning keys we know exist in the original resource.
+					for (const key in newShape) storedResource[key] = objectInput[key]
+					return storedResource
 				}
 
-				// @ts-expect-error - Assigning keys we know exist in the original resource.
-				for (const key in newShape) storedResource[key] = this[key]
-				return storedResource
+				storedResources.set(this._resourceMetadata.id, new WeakRef(this))
 			}
 
 			static override resourceManager = super.resourceManager.shapeExtend(newShape)

@@ -8,4 +8,4 @@ export const Resource = applySvelteMixin(CoreResource)
 
 export const QueryResource = applySvelteMixin(CoreQueryResource)
 
-export const query = QueryResource.build
+export const query = QueryResource.build.bind(QueryResource)

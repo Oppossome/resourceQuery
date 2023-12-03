@@ -10,7 +10,7 @@ export function useDebouncedTimeout(ms: number) {
 	}
 }
 
-export function applySvelteMixin(input: typeof CoreResource) {
+export function applySvelteMixin<Resource extends typeof CoreResource>(input: Resource) {
 	return class SvelteResource extends input {
 		/**
 		 * A store that contains the resource. This allows users to subscribe to changes in the resource.

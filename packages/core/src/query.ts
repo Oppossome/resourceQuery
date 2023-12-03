@@ -8,7 +8,29 @@ interface QueryOptions<CacheKey, Result> {
 	cacheKey?: CacheKey
 }
 
-class QueryResource<CacheKey, Result> extends Resource.resourceExtend({
+class QueryBuilder<Query extends typeof QueryResource, CacheKey, Result> {
+	constructor(
+		protected resource: typeof QueryResource,
+		protected options: QueryOptions<CacheKey, Result>,
+	) {
+		//
+	}
+
+	withCacheKey<NewCacheKey>(cacheKey: NewCacheKey): QueryBuilder<Query, NewCacheKey, Result> {
+		return new QueryBuilder(this.resource, { ...this.options, cacheKey })
+	}
+
+	execute() {
+		return new this.resource(this.options)
+	}
+}
+
+/**
+ * The QueryResource is a resource that is used to query data from an external source.
+ * @template CacheKey The type of the cache key.
+ * @template Result The type of the result.
+ */
+export class QueryResource<CacheKey, Result> extends Resource.resourceExtend({
 	id: uniqueId(z.unknown()),
 	result: z.any(),
 	error: z.any(),
@@ -58,32 +80,14 @@ class QueryResource<CacheKey, Result> extends Resource.resourceExtend({
 			else this.result = new Error("An unknown error occurred.")
 		}
 	}
-}
-
-class Query<CacheKey, Result> {
-	private constructor(protected options: QueryOptions<CacheKey, Result>) {
-		//
-	}
-
-	withCacheKey<NewCacheKey>(cacheKey: NewCacheKey): Query<NewCacheKey, Result> {
-		return new Query({ ...this.options, cacheKey })
-	}
-
-	execute() {
-		return new QueryResource(this.options)
-	}
 
 	/**
-	 * This is the internal implementation of {@link query}.
-	 * @internal
+	 * This method is used to build a query resource.
 	 */
-	static create<Result>(query: () => Promise<Result>): Query<undefined, Result> {
-		return new Query({ query })
+	static build<This extends typeof QueryResource, Result>(
+		this: This,
+		query: () => Promise<Result>,
+	): QueryBuilder<This, undefined, Result> {
+		return new QueryBuilder(this, { query })
 	}
 }
-
-/**
- * Returns a new query.
- * @param query - The query to execute.
- */
-export const query = Query.create.bind(Query)

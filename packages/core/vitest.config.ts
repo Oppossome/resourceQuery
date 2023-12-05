@@ -7,5 +7,8 @@ export default defineConfig({
 		coverage: {
 			provider: "istanbul",
 		},
+		browser: {
+			name: "chrome",
+		},
 	},
 })

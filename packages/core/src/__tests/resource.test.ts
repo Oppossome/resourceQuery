@@ -3,6 +3,7 @@ import { v4 as uuid } from "uuid"
 import { z } from "zod"
 
 import { Resource, uniqueId } from "../resource"
+import { expectGC } from "./helpers"
 
 class User extends Resource.resourceExtend({
 	id: uniqueId(z.string()),
@@ -51,5 +52,9 @@ describe("Resource", () => {
 
 		// @ts-expect-error - This should throw an error
 		expect(() => new User(123)).toThrowError()
+	})
+
+	it("should garbagecollect without issue", async () => {
+		await expectGC(() => new User({ id: "GC-Test", name: "Test" }))
 	})
 })

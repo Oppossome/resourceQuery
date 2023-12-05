@@ -24,9 +24,7 @@ export function applySvelteMixin<Resource extends typeof CoreResource>(input: Re
 		 * A function that dispatches an update to the underlying store.
 		 * @internal
 		 */
-		protected _dispatchUpdate? = useDebouncedCallback(() => {
-			this._resourceStore.set(this)
-		})
+		protected _dispatchUpdate? = useDebouncedCallback(() => this._resourceStore.set(this))
 
 		override toJSON(): Record<string, unknown> {
 			const { _resourceStore, ...rest } = super.toJSON()
@@ -54,7 +52,9 @@ export function applySvelteMixin<Resource extends typeof CoreResource>(input: Re
 					// If the input is invalid, throw the error, otherwise assign the parsed value to the propValues object
 					if (!parsedValue.success) throw parsedValue.error
 					propValue = parsedValue.data
-					this._dispatchUpdate?.() // Dispatch an update to the store, if it exists.
+
+					// Dispatch an update to the store, if it exists yet.
+					this._dispatchUpdate?.()
 				},
 			})
 		}

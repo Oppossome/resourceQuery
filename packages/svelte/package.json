@@ -5,7 +5,9 @@
 	"packageManager": "yarn@4.0.2",
 	"main": "./src/index.ts",
 	"scripts": {
-		"test": "vitest --typecheck --no-watch && vitest",
+		"test": "yarn test:types --no-watch && yarn test:unit",
+		"test:unit": "yarn node --expose-gc \"$(yarn bin vitest)\"",
+		"test:types": "vitest --typecheck",
 		"coverage": "vitest run --coverage"
 	},
 	"dependencies": {

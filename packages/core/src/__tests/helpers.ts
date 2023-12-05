@@ -30,9 +30,9 @@ export async function invokeGC() {
  * Expects the garbage collector to run on the provided input.
  * @param input The input to check.
  */
-export async function expectGC(input: () => object) {
+export async function expectGC(input: () => object | Promise<object>) {
 	// Create a weak reference to the input, and ensure it exists
-	const weakRef = new WeakRef(input())
+	const weakRef = new WeakRef(await input())
 	expect(weakRef.deref()).toBeDefined()
 
 	// Invoke the garbage collector, and ensure the input has been garbage collected

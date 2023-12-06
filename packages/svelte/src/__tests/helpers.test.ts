@@ -1,6 +1,5 @@
 import { z } from "zod"
 import { vi, it, expect, describe, type Mock, beforeEach, afterEach } from "vitest"
-import { wait } from "@resourcequery/core/src/__tests/helpers"
 
 import { Resource } from ".."
 

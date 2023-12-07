@@ -21,6 +21,7 @@ export class Query<const Opts extends QueryOptions> extends Resource.resourceExt
 	constructor(protected options: Opts) {
 		// If the cache key isn't provided, generate a random one.
 		super({ cacheKey: options.cacheKey ?? uuid() })
+		this.invalidate()
 	}
 
 	override get result(): Awaited<ReturnType<Opts["query"]>> | undefined {

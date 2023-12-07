@@ -3,9 +3,9 @@ import { v4 as uuid } from "uuid"
 
 import { Resource, uniqueId } from "./resource"
 
-export interface QueryOptions<CacheKey, Result> {
-	query: () => Promise<Result>
-	cacheKey?: CacheKey
+export interface QueryOptions {
+	cacheKey?: any
+	query: () => Promise<any>
 }
 
 /**
@@ -13,21 +13,21 @@ export interface QueryOptions<CacheKey, Result> {
  * @template CacheKey The type of the cache key.
  * @template Result The type of the result.
  */
-export class Query<CacheKey, Result> extends Resource.resourceExtend({
+export class Query<const Opts extends QueryOptions> extends Resource.resourceExtend({
 	cacheKey: uniqueId(z.unknown()),
 	result: z.any(),
 	error: z.any(),
 }) {
-	constructor(protected options: QueryOptions<CacheKey, Result>) {
+	constructor(protected options: Opts) {
 		// If the cache key isn't provided, generate a random one.
 		super({ cacheKey: options.cacheKey ?? uuid() })
 	}
 
-	override get result(): Result | undefined {
+	override get result(): Awaited<ReturnType<Opts["query"]>> | undefined {
 		return super.result
 	}
 
-	override set result(result: Result | Error | undefined) {
+	override set result(result: Awaited<ReturnType<Opts["query"]>> | Error | undefined) {
 		// Order Matters: status goes from "SUCCESS" to "ERROR"
 		if (result instanceof Error) {
 			super.error = result
@@ -54,6 +54,9 @@ export class Query<CacheKey, Result> extends Resource.resourceExtend({
 		}
 	}
 
+	/**
+	 * Invalidates the query and re-runs it.
+	 */
 	async invalidate() {
 		try {
 			this.result = await this.options.query()

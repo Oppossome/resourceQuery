@@ -3,7 +3,7 @@ import { v4 as uuid } from "uuid"
 
 import { Resource, uniqueId } from "./resource"
 
-interface QueryOptions<CacheKey, Result> {
+export interface QueryOptions<CacheKey, Result> {
 	query: () => Promise<Result>
 	cacheKey?: CacheKey
 }
@@ -21,7 +21,6 @@ export class Query<CacheKey, Result> extends Resource.resourceExtend({
 	constructor(protected options: QueryOptions<CacheKey, Result>) {
 		// If the cache key isn't provided, generate a random one.
 		super({ cacheKey: options.cacheKey ?? uuid() })
-		this.invalidate() // Kick off the query.
 	}
 
 	override get result(): Result | undefined {
@@ -29,12 +28,13 @@ export class Query<CacheKey, Result> extends Resource.resourceExtend({
 	}
 
 	override set result(result: Result | Error | undefined) {
-		// If the result is an error, we set the error and clear the result.
+		// Order Matters: status goes from "SUCCESS" to "ERROR"
 		if (result instanceof Error) {
-			super.result = undefined
 			super.error = result
+			super.result = undefined
 		}
 
+		// Order Matters: status goes from "ERROR" to "SUCCESS"
 		super.result = result
 		super.error = undefined
 	}

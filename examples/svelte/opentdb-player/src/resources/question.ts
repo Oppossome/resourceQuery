@@ -40,14 +40,15 @@ export class Question extends Resource.resourceExtend({
 	static fetch() {
 		return new Query({
 			query: async () => {
-				const schema = z.object({
-					response_code: z.literal(0),
-					results: z.array(Question.resourceSchema()),
-				})
-
 				await wait(5000) // So we respect the rate limit
 				const query = await fetch("https://opentdb.com/api.php?amount=10")
-				return schema.parse(await query.json()).results
+
+				return z
+					.object({
+						response_code: z.literal(0),
+						results: z.array(Question.resourceSchema()),
+					})
+					.parse(await query.json())
 			},
 		})
 	}

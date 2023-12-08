@@ -3,9 +3,10 @@ import { v4 as uuid } from "uuid"
 
 import { Resource, uniqueId } from "./resource"
 
-export interface QueryOptions {
-	cacheKey?: any
-	query: () => Promise<any>
+export interface QueryOptions<CacheKey, Schema extends z.ZodSchema> {
+	schema: Schema
+	cacheKey?: CacheKey
+	query: (this: Query<CacheKey, Schema>, schema: Schema) => Promise<z.infer<Schema> | undefined>
 }
 
 /**
@@ -13,22 +14,23 @@ export interface QueryOptions {
  * @template CacheKey The type of the cache key.
  * @template Result The type of the result.
  */
-export class Query<const Opts extends QueryOptions> extends Resource.resourceExtend({
+export class Query<CacheKey, Schema extends z.ZodSchema> extends Resource.resourceExtend({
 	cacheKey: uniqueId(z.unknown()),
+	isLoading: z.boolean(),
 	result: z.any(),
 	error: z.any(),
 }) {
-	constructor(protected options: Opts) {
+	constructor(protected options: QueryOptions<CacheKey, Schema>) {
 		// If the cache key isn't provided, generate a random one.
-		super({ cacheKey: options.cacheKey ?? uuid() })
+		super({ cacheKey: options.cacheKey ?? uuid(), isLoading: false })
 		this.invalidate()
 	}
 
-	override get result(): Awaited<ReturnType<Opts["query"]>> | undefined {
+	override get result(): z.infer<Schema> | undefined {
 		return super.result
 	}
 
-	override set result(result: Awaited<ReturnType<Opts["query"]>> | Error | undefined) {
+	override set result(result: z.infer<Schema> | Error | undefined) {
 		// Order Matters: status goes from "SUCCESS" to "ERROR"
 		if (result instanceof Error) {
 			super.error = result
@@ -59,12 +61,20 @@ export class Query<const Opts extends QueryOptions> extends Resource.resourceExt
 	 * Invalidates the query and re-runs it.
 	 */
 	async invalidate() {
+		// If the query is already loading, don't run it again.
+		if (this.isLoading) return
+		this.isLoading = true
+
+		// Run the query, and set the result if its returned.
 		try {
-			this.result = await this.options.query()
+			const result = await this.options.query.call(this, this.options.schema)
+			if (result !== undefined) this.result = result
 		} catch (error) {
 			if (error instanceof Error) this.result = error
 			else if (typeof error === "string") this.result = new Error(error)
 			else this.result = new Error("An unknown error occurred.")
 		}
+
+		this.isLoading = false
 	}
 }

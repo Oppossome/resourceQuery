@@ -1,7 +1,7 @@
 <script lang="ts">
-  import TodoItem from "./lib/todo"
+  import Todo from "./lib/todo"
 
-  $: todoQuery = TodoItem.fetch(5)
+  $: todoQuery = Todo.fetch()
 </script>
 
 {JSON.stringify($todoQuery.result)}

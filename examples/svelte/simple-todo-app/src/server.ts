@@ -32,10 +32,9 @@ export default function makeServer() {
 					todoItems.push(db.todos[i + pageOffset])
 				}
 
-				return {
-					todos: todoItems,
-					next_page: db.todos.length > pageOffset + 5 ? pageOffset + 5 : null,
-				}
+				return db.todos.length > pageOffset + 5
+					? { todos: todoItems, next_page: pageOffset + 5 }
+					: { todos: todoItems }
 			})
 
 			this.patch("/todos/:id", (schema, request) => {

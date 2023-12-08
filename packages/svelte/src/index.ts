@@ -1,4 +1,5 @@
-import { Resource as BaseResource, Query as BaseQuery, QueryOptions } from "@resourcequery/core"
+import { Resource as BaseResource, Query as BaseQuery } from "@resourcequery/core"
+import { z } from "zod"
 
 import { applySvelteMixin } from "./helpers"
 
@@ -9,12 +10,14 @@ export { uniqueId, updatedOn, type QueryOptions } from "@resourcequery/core"
  */
 export const Resource = applySvelteMixin(BaseResource)
 
-export class Query<const Opts extends QueryOptions> extends applySvelteMixin(BaseQuery)<Opts> {
+export class Query<CacheKey, Schema extends z.ZodSchema> extends applySvelteMixin(BaseQuery)<
+	CacheKey,
+	Schema
+> {
 	public resolved(): Promise<this> {
 		return new Promise((resolve) => {
 			const unsub = this.subscribe((resource) => {
 				if (resource.status === "PENDING") return
-				console.log("Resolving at", resource.status)
 				resolve(resource)
 				setTimeout(unsub)
 			})

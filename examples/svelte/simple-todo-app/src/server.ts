@@ -37,9 +37,17 @@ export default function makeServer() {
 					: { todos: todoItems }
 			})
 
-			this.patch("/todos/:id", (schema, request) => {
-				const todo = JSON.parse(request.requestBody).data
-				return schema.db.todos.update(todo.id, todo)
+			this.patch("/todos", ({ db }, request) => {
+				const todoBody = JSON.parse(request.requestBody)
+				const todoItem = [...db.todos].find((todo) => todo.id === todoBody.id)
+
+				for (const key in todoBody) {
+					todoItem[key] = todoBody[key]
+				}
+
+				return {
+					todo: todoItem,
+				}
 			})
 
 			this.post("/todos", (schema, request) => {

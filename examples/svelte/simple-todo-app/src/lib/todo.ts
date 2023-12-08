@@ -1,4 +1,4 @@
-import { Resource, Query } from "@resourcequery/svelte"
+import { Query, Resource, type InferResource } from "@resourcequery/svelte"
 import { z } from "zod"
 
 export class PaginatedQuery<
@@ -14,13 +14,33 @@ export class PaginatedQuery<
 	}
 }
 
+type PatchTodo = Partial<InferResource<typeof Todo>> & { id: string }
+
 export default class Todo extends Resource.resourceExtend({
 	id: Resource.uniqueId(z.string().uuid()),
 	completed: z.boolean(),
 	text: z.string(),
 }) {
-	public get summary() {
-		return `${this.text} (${this.completed ? "Completed" : "Incomplete"})`
+	get summary() {
+		return `${this.text} ${this.completed ? "✔" : "❌"}`
+	}
+
+	patch(input: Omit<PatchTodo, "id">) {
+		return Todo.patch({ ...input, id: this.id })
+	}
+
+	static patch(update: PatchTodo) {
+		return new Query({
+			schema: z.object({ todo: Todo.resourceSchema() }),
+			query: async function (schema) {
+				const response = await fetch(`/api/todos`, {
+					body: JSON.stringify(update),
+					method: "PATCH",
+				})
+
+				return schema.parse(await response.json())
+			},
+		})
 	}
 
 	static fetch() {

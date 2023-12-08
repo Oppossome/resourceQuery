@@ -7,7 +7,7 @@ import { z } from "zod"
 
 import { applySvelteMixin } from "./helpers"
 
-export { type QueryOptions } from "@resourcequery/core"
+export { type QueryOptions, type InferResource } from "@resourcequery/core"
 
 /**
  * Define a query class that extends the CoreResource class.

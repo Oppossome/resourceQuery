@@ -9,6 +9,12 @@ export interface ResourceMetadata {
 	updatedOn?: Date
 }
 
+// prettier-ignore
+export type InferResource<T extends typeof ResourceClass> = 
+	T extends { new (input: infer P): any }
+		? P
+		: never
+
 let resourceUpdating: ResourceMetadata | undefined
 
 export class ResourceClass {
@@ -189,7 +195,7 @@ function uniqueId<Schema extends z.ZodTypeAny>(schemaOf?: Schema) {
 
 		// Assign the current resource's id to the parsed input's data
 		resourceUpdating.id = parsedInput.data
-		return parsedInput.data
+		return parsedInput.data as z.infer<Schema>
 	})
 }
 

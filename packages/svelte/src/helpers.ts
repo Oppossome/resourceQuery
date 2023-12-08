@@ -2,11 +2,11 @@ import { Resource as CoreResource } from "@resourcequery/core"
 import { Writable, writable } from "svelte/store"
 import { z } from "zod"
 
-export function useDebouncedCallback(callback: () => void, ms: number = 250) {
+export function useDebouncedCallback(callback: () => void) {
 	let timeout: ReturnType<typeof setTimeout> | undefined
 	return () => {
 		if (timeout) clearTimeout(timeout)
-		timeout = setTimeout(callback, ms)
+		timeout = setTimeout(callback, 15)
 	}
 }
 
@@ -36,27 +36,8 @@ export function applySvelteMixin<Resource extends typeof CoreResource>(input: Re
 		 * @internal
 		 */
 		protected override _resourceDefineProperty(key: string, schema: z.ZodTypeAny): void {
-			let propValue: unknown
-
-			Object.defineProperty(this, key, {
-				get: () => propValue,
-				set: (value: unknown) => {
-					// Because we're parsing the input
-					const lastResourcesMetadata = CoreResource._resourceUpdating
-					CoreResource._resourceUpdating = this._resourceMetadata
-
-					// Safely parse the input so we can return _resourceUpdating to its original value
-					const parsedValue = schema.safeParse(value)
-					CoreResource._resourceUpdating = lastResourcesMetadata
-
-					// If the input is invalid, throw the error, otherwise assign the parsed value to the propValues object
-					if (!parsedValue.success) throw parsedValue.error
-					propValue = parsedValue.data
-
-					// Dispatch an update to the store, if it exists yet.
-					this._dispatchUpdate?.()
-				},
-			})
+			// Call the original _resourceDefineProperty function, but also update dispatch an update to the store.
+			super._resourceDefineProperty(key, schema, () => this._dispatchUpdate?.())
 		}
 	}
 }

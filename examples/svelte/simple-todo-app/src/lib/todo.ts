@@ -2,9 +2,12 @@ import { Resource, Query, uniqueId } from "@resourcequery/svelte"
 import { z } from "zod"
 
 export class PaginatedQuery<
-	CacheKey,
 	Schema extends z.ZodSchema<{ next_page?: number }>,
-> extends Query<CacheKey, Schema> {
+> extends Query<Schema> {
+	public get canLoadMore() {
+		return !this.loading && this.result?.next_page !== undefined
+	}
+
 	public nextPage() {
 		if (!this.result?.next_page) return // No next page or occupied
 		this.invalidate()
@@ -25,7 +28,7 @@ export default class Todo extends Resource.resourceExtend({
 			query: async function (schema) {
 				const response = await fetch(`/api/todos?pageOffset=${this.result?.next_page ?? 0}`)
 				const result = schema.parse(await response.json())
-				if (!this.result?.todos) return result
+				if (!this.result) return result
 
 				return {
 					...result,

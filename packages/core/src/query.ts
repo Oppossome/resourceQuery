@@ -1,12 +1,10 @@
 import { z } from "zod"
-import { v4 as uuid } from "uuid"
 
-import { Resource, uniqueId } from "./resource"
+import { Resource } from "./resource"
 
-export interface QueryOptions<CacheKey, Schema extends z.ZodSchema> {
+export interface QueryOptions<Schema extends z.ZodSchema> {
 	schema: Schema
-	cacheKey?: CacheKey
-	query: (this: Query<CacheKey, Schema>, schema: Schema) => Promise<z.infer<Schema> | undefined>
+	query: (this: Query<Schema>, schema: Schema) => Promise<z.infer<Schema> | undefined>
 }
 
 /**
@@ -14,15 +12,14 @@ export interface QueryOptions<CacheKey, Schema extends z.ZodSchema> {
  * @template CacheKey The type of the cache key.
  * @template Result The type of the result.
  */
-export class Query<CacheKey, Schema extends z.ZodSchema> extends Resource.resourceExtend({
-	cacheKey: uniqueId(z.unknown()),
-	isLoading: z.boolean(),
+export class Query<Schema extends z.ZodSchema> extends Resource.resourceExtend({
+	loading: z.boolean(),
 	result: z.any(),
 	error: z.any(),
 }) {
-	constructor(protected options: QueryOptions<CacheKey, Schema>) {
+	constructor(protected options: QueryOptions<Schema>) {
 		// If the cache key isn't provided, generate a random one.
-		super({ cacheKey: options.cacheKey ?? uuid(), isLoading: false })
+		super({ loading: false })
 		this.invalidate()
 	}
 
@@ -46,24 +43,13 @@ export class Query<CacheKey, Schema extends z.ZodSchema> extends Resource.resour
 		return super.error
 	}
 
-	get status() {
-		switch (true) {
-			case this.error !== undefined:
-				return "ERROR"
-			case this.result !== undefined:
-				return "SUCCESS"
-			default:
-				return "PENDING"
-		}
-	}
-
 	/**
 	 * Invalidates the query and re-runs it.
 	 */
 	async invalidate() {
 		// If the query is already loading, don't run it again.
-		if (this.isLoading) return
-		this.isLoading = true
+		if (this.loading) return
+		this.loading = true
 
 		// Run the query, and set the result if its returned.
 		try {
@@ -75,6 +61,6 @@ export class Query<CacheKey, Schema extends z.ZodSchema> extends Resource.resour
 			else this.result = new Error("An unknown error occurred.")
 		}
 
-		this.isLoading = false
+		this.loading = false
 	}
 }

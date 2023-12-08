@@ -6,4 +6,10 @@
 
 {JSON.stringify($todoQuery.result)}
 
-<button on:click={() => $todoQuery.nextPage()}> Load More </button>
+{#if $todoQuery.loading}
+  <p>Loading...</p>
+{/if}
+
+{#if $todoQuery.canLoadMore}
+  <button on:click={() => $todoQuery.nextPage()}> Load More </button>
+{/if}

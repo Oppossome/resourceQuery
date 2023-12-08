@@ -9,6 +9,8 @@ export interface ResourceMetadata {
 	updatedOn?: Date
 }
 
+let resourceUpdating: ResourceMetadata | undefined
+
 export class Resource {
 	constructor(..._params: any[]) {
 		// Do absolutely nothing
@@ -18,7 +20,7 @@ export class Resource {
 	 * Metadata about the resource.
 	 * @internal
 	 */
-	_resourceMetadata: ResourceMetadata = { id: uuid() }
+	protected _resourceMetadata: ResourceMetadata = { id: uuid() }
 
 	/**
 	 * Utilized by derived classes to define properties on the resource. This gives us
@@ -36,12 +38,12 @@ export class Resource {
 			get: () => propValue,
 			set: (value: unknown) => {
 				// Because we're parsing the input
-				const lastResourcesMetadata = Resource._resourceUpdating
-				Resource._resourceUpdating = this._resourceMetadata
+				const lastResourcesMetadata = resourceUpdating
+				resourceUpdating = this._resourceMetadata
 
-				// Safely parse the input so we can return _resourceUpdating to its original value
+				// Safely parse the input so we can return resourceUpdating to its original value
 				const parsedValue = schema.safeParse(value)
-				Resource._resourceUpdating = lastResourcesMetadata
+				resourceUpdating = lastResourcesMetadata
 
 				// If the input is invalid, throw the error, otherwise assign the parsed value to the propValues object
 				if (!parsedValue.success) throw parsedValue.error
@@ -160,81 +162,62 @@ export class Resource {
 			}
 		>
 	}
-
-	/**
-	 * Utilized by {@link Resource}, {@link Resource._resourceUniqueId}, {@link Resource._resourceUpdatedOn}
-	 * to keep track of the current resource being updated.
-	 * @internal
-	 */
-	static _resourceUpdating: ResourceMetadata | undefined
-
-	/**
-	 * Implementation of {@link uniqueID} (Public API)
-	 * @internal
-	 */
-	static _resourceUniqueId<Schema extends z.ZodTypeAny>(schemaOf?: Schema) {
-		return z.unknown().transform((input, ctx) => {
-			if (!this._resourceUpdating) {
-				ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Unexpected resourceUniqueId call" })
-				return z.NEVER
-			}
-
-			// Parse the input of our schema
-			const parseSchema = schemaOf ?? z.string()
-			const parsedInput = parseSchema.safeParse(input)
-
-			// If the input is invalid, add the issues and return z.NEVER
-			if (!parsedInput.success) {
-				parsedInput.error.addIssues(parsedInput.error.issues)
-				return z.NEVER
-			}
-
-			// Assign the current resource's id to the parsed input's data
-			this._resourceUpdating.id = parsedInput.data
-			return parsedInput.data
-		})
-	}
-
-	/**
-	 * Implementation of {@link updatedOn} (Public API)
-	 * @internal
-	 */
-	static _resourceUpdatedOn<Schema extends z.ZodType<Date, any, any>>(schemaOf?: Schema) {
-		return z.unknown().transform((input, ctx) => {
-			if (!this._resourceUpdating) {
-				ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Unexpected resourceUpdatedOn call" })
-				return z.NEVER
-			}
-
-			// Parse the input of our schema
-			const parseSchema = schemaOf ?? z.coerce.date()
-			const parsedInput = parseSchema.safeParse(input)
-
-			// If the input is invalid, add the issues and return z.NEVER
-			if (!parsedInput.success) {
-				parsedInput.error.addIssues(parsedInput.error.issues)
-				return z.NEVER
-			}
-
-			// Assign the current resource's updatedOn to the parsed input's data
-			this._resourceUpdating.updatedOn = parsedInput.data
-			return parsedInput.data
-		})
-	}
 }
 
 /**
- * Returns a schema that assigns the parsed output to the current {@link Resource._resourceUpdating}.
+ * Returns a schema that assigns the parsed output to the current {@link resourceUpdating}.
  * @template {z.ZodTypeAny} Schema
  * @param {Schema | undefined} schemaOf
  * The schema to parse the input of, defaults to {@link z.string}.
  */
-export const uniqueId = Resource._resourceUniqueId.bind(Resource)
+export function uniqueId<Schema extends z.ZodTypeAny>(schemaOf?: Schema) {
+	return z.unknown().transform((input, ctx) => {
+		if (!resourceUpdating) {
+			ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Unexpected resourceUniqueId call" })
+			return z.NEVER
+		}
+
+		// Parse the input of our schema
+		const parseSchema = schemaOf ?? z.string()
+		const parsedInput = parseSchema.safeParse(input)
+
+		// If the input is invalid, add the issues and return z.NEVER
+		if (!parsedInput.success) {
+			parsedInput.error.addIssues(parsedInput.error.issues)
+			return z.NEVER
+		}
+
+		// Assign the current resource's id to the parsed input's data
+		resourceUpdating.id = parsedInput.data
+		return parsedInput.data
+	})
+}
 
 /**
- * Returns a schema that assigns the parsed output to the current {@link Resource._resourceUpdating}
+ * Returns a schema that assigns the parsed output to the current {@link resourceUpdating}
  * @template {z.ZodType<any, any, Date>} Schema
  * @param {Schema} schemaOf
  * The schema to parse the input of, defaults to {@link z.date}
  */
-export const updatedOn = Resource._resourceUpdatedOn.bind(Resource)
+export function updatedOn<Schema extends z.ZodType<Date, any, any>>(schemaOf?: Schema) {
+	return z.unknown().transform((input, ctx) => {
+		if (!resourceUpdating) {
+			ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Unexpected resourceUpdatedOn call" })
+			return z.NEVER
+		}
+
+		// Parse the input of our schema
+		const parseSchema = schemaOf ?? z.coerce.date()
+		const parsedInput = parseSchema.safeParse(input)
+
+		// If the input is invalid, add the issues and return z.NEVER
+		if (!parsedInput.success) {
+			parsedInput.error.addIssues(parsedInput.error.issues)
+			return z.NEVER
+		}
+
+		// Assign the current resource's updatedOn to the parsed input's data
+		resourceUpdating.updatedOn = parsedInput.data
+		return parsedInput.data
+	})
+}

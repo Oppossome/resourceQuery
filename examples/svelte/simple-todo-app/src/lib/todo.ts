@@ -1,4 +1,4 @@
-import { Resource, Query, uniqueId } from "@resourcequery/svelte"
+import { Resource, Query } from "@resourcequery/svelte"
 import { z } from "zod"
 
 export class PaginatedQuery<
@@ -15,10 +15,14 @@ export class PaginatedQuery<
 }
 
 export default class Todo extends Resource.resourceExtend({
-	id: uniqueId(z.string().uuid()),
-	text: z.string(),
+	id: Resource.uniqueId(z.string().uuid()),
 	completed: z.boolean(),
+	text: z.string(),
 }) {
+	public get summary() {
+		return `${this.text} (${this.completed ? "Completed" : "Incomplete"})`
+	}
+
 	static fetch() {
 		return new PaginatedQuery({
 			schema: z.object({

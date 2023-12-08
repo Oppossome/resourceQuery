@@ -1,14 +1,24 @@
-import { Resource as BaseResource, Query as BaseQuery } from "@resourcequery/core"
+import {
+	Query as BaseQuery,
+	Resource as BaseResource,
+	ResourceClass as BaseResourceClass,
+} from "@resourcequery/core"
 import { z } from "zod"
 
 import { applySvelteMixin } from "./helpers"
 
-export { type QueryOptions, uniqueId, updatedOn } from "@resourcequery/core"
+export { type QueryOptions } from "@resourcequery/core"
 
 /**
  * Define a query class that extends the CoreResource class.
  */
-export const Resource = applySvelteMixin(BaseResource)
+export const ResourceClass = applySvelteMixin(BaseResourceClass)
+
+export const Resource = {
+	...BaseResource,
+	resourceExtend: <NewShape extends z.ZodRawShape>(shape: NewShape) =>
+		ResourceClass.resourceExtend(shape),
+}
 
 export class Query<Schema extends z.ZodSchema> extends applySvelteMixin(BaseQuery)<Schema> {
 	public resolved(): Promise<this> {

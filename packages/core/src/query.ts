@@ -1,6 +1,6 @@
 import { z } from "zod"
 
-import { Resource } from "./resource"
+import { ResourceClass } from "./resource"
 
 export interface QueryOptions<Schema extends z.ZodSchema> {
 	schema: Schema
@@ -12,7 +12,7 @@ export interface QueryOptions<Schema extends z.ZodSchema> {
  * @template CacheKey The type of the cache key.
  * @template Result The type of the result.
  */
-export class Query<Schema extends z.ZodSchema> extends Resource.resourceExtend({
+export class Query<Schema extends z.ZodSchema> extends ResourceClass.resourceExtend({
 	loading: z.boolean(),
 	result: z.any(),
 	error: z.any(),

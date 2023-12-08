@@ -1,4 +1,4 @@
-import { Resource as CoreResource } from "@resourcequery/core"
+import { ResourceClass } from "@resourcequery/core"
 import { Writable, writable } from "svelte/store"
 import { z } from "zod"
 
@@ -10,7 +10,7 @@ export function useDebouncedCallback(callback: () => void) {
 	}
 }
 
-export function applySvelteMixin<Resource extends typeof CoreResource>(input: Resource) {
+export function applySvelteMixin<Resource extends typeof ResourceClass>(input: Resource) {
 	return class SvelteResource extends input {
 		/**
 		 * A store that contains the resource. This allows users to subscribe to changes in the resource.

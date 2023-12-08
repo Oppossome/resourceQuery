@@ -1,6 +1,6 @@
 import { z } from "zod"
 
-import { Resource } from "./resource"
+import { ResourceClass } from "./resource"
 
 export class ResourceManager<Shape extends z.ZodRawShape> {
 	constructor(public shape: Shape) {}
@@ -15,5 +15,5 @@ export class ResourceManager<Shape extends z.ZodRawShape> {
 
 	// === Storage ===
 
-	resourceStorage = new Map<unknown, WeakRef<Resource>>()
+	resourceStorage = new Map<unknown, WeakRef<ResourceClass>>()
 }

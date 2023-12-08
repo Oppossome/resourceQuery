@@ -2,11 +2,11 @@ import { describe, expect, it } from "vitest"
 import { v4 as uuid } from "uuid"
 import { z } from "zod"
 
-import { Resource, uniqueId } from "../resource"
+import { Resource } from "../resource"
 import { expectGC } from "./helpers"
 
 class User extends Resource.resourceExtend({
-	id: uniqueId(z.string()),
+	id: Resource.uniqueId(z.string()),
 	name: z.string(),
 }) {
 	get mentionStr() {

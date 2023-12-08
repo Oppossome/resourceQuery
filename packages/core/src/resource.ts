@@ -11,7 +11,7 @@ export interface ResourceMetadata {
 
 let resourceUpdating: ResourceMetadata | undefined
 
-export class Resource {
+export class ResourceClass {
 	constructor(..._params: any[]) {
 		// Do absolutely nothing
 	}
@@ -67,7 +67,7 @@ export class Resource {
 	/**
 	 * Returns a zod schema that parses the input into this resource.
 	 * ```ts
-	 * class User extends Resource.resourceExtend({
+	 * class User extends ResourceClass.resourceExtend({
 	 * 	id: uniqueId(z.string()),
 	 * 	discriminator: z.number(),
 	 * 	name: z.string(),
@@ -86,7 +86,7 @@ export class Resource {
 	 * })
 	 * ```
 	 */
-	static resourceSchema<This extends typeof Resource>(this: This) {
+	static resourceSchema<This extends typeof ResourceClass>(this: This) {
 		return z.record(z.unknown()).transform((input) => new this(input) as InstanceType<This>)
 	}
 
@@ -94,7 +94,7 @@ export class Resource {
 	 * Extends the current resource with the provided shape.
 	 * @example
 	 * ```ts
-	 * class User extends Resource.resourceExtend({
+	 * class User extends ResourceClass.resourceExtend({
 	 * 	id: uniqueId(z.string()),
 	 * 	discriminator: z.number(),
 	 * 	name: z.string(),
@@ -113,7 +113,7 @@ export class Resource {
 	 * }
 	 * ```
 	 */
-	static resourceExtend<This extends typeof Resource, NewShape extends z.ZodRawShape>(
+	static resourceExtend<This extends typeof ResourceClass, NewShape extends z.ZodRawShape>(
 		this: This,
 		newShape: NewShape,
 	) {
@@ -170,7 +170,7 @@ export class Resource {
  * @param {Schema | undefined} schemaOf
  * The schema to parse the input of, defaults to {@link z.string}.
  */
-export function uniqueId<Schema extends z.ZodTypeAny>(schemaOf?: Schema) {
+function uniqueId<Schema extends z.ZodTypeAny>(schemaOf?: Schema) {
 	return z.unknown().transform((input, ctx) => {
 		if (!resourceUpdating) {
 			ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Unexpected resourceUniqueId call" })
@@ -199,7 +199,7 @@ export function uniqueId<Schema extends z.ZodTypeAny>(schemaOf?: Schema) {
  * @param {Schema} schemaOf
  * The schema to parse the input of, defaults to {@link z.date}
  */
-export function updatedOn<Schema extends z.ZodType<Date, any, any>>(schemaOf?: Schema) {
+function updatedOn<Schema extends z.ZodType<Date, any, any>>(schemaOf?: Schema) {
 	return z.unknown().transform((input, ctx) => {
 		if (!resourceUpdating) {
 			ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Unexpected resourceUpdatedOn call" })
@@ -220,4 +220,11 @@ export function updatedOn<Schema extends z.ZodType<Date, any, any>>(schemaOf?: S
 		resourceUpdating.updatedOn = parsedInput.data
 		return parsedInput.data
 	})
+}
+
+export const Resource = {
+	resourceExtend: <NewShape extends z.ZodRawShape>(shape: NewShape) =>
+		ResourceClass.resourceExtend(shape),
+	updatedOn,
+	uniqueId,
 }

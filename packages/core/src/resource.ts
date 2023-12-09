@@ -24,9 +24,11 @@ function defineProperties<Resource extends typeof ResourceClass, Shape extends z
 				return this._resourceMetadata.events.get(key)
 			},
 			set(value) {
+				// Get the last resource metadata, then set the current resource metadata to the one we're updating
 				const lastResourcesMetadata = resourceUpdating
 				resourceUpdating = this._resourceMetadata
 
+				// Parse the value of the input safely so we can set resourceUpdating back to the last resource metadata
 				const parsedValue = shape[key].safeParse(value)
 				resourceUpdating = lastResourcesMetadata
 
@@ -66,32 +68,6 @@ export class ResourceClass {
 				this._resourceMetadata.fields[key] = value
 			},
 		},
-	}
-
-	/**
-	 * Utilized by derived classes to define properties on the resource. This gives us
-	 * the ability to define getters and setters with custom functionality in derived classes.
-	 * @internal
-	 */
-	protected _resourceDefineProperty(key: string, schema: z.ZodTypeAny) {
-		let propValue: unknown
-
-		Object.defineProperty(this, key, {
-			get: () => propValue,
-			set: (value: unknown) => {
-				// Because we're parsing the input
-				const lastResourcesMetadata = resourceUpdating
-				resourceUpdating = this._resourceMetadata
-
-				// Safely parse the input so we can return resourceUpdating to its original value
-				const parsedValue = schema.safeParse(value)
-				resourceUpdating = lastResourcesMetadata
-
-				// If the input is invalid, throw the error, otherwise assign the parsed value to the propValues object
-				if (!parsedValue.success) throw parsedValue.error
-				propValue = parsedValue.data
-			},
-		})
 	}
 
 	toJSON(): Record<string, unknown> {
@@ -195,6 +171,7 @@ export class ResourceClass {
 			}
 		}
 
+		// Define the properties on the prototype, and return the extended class
 		defineProperties(Extension, newShape)
 		return Extension as ExtendClass<
 			This,

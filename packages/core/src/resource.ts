@@ -4,6 +4,18 @@ import { v4 as uuid } from "uuid"
 import { ResourceManager } from "./manager"
 import { isObject, type ExtendClass } from "./helpers/types"
 
+/**
+ * The resource that is currently being updated.
+ * @internal
+ */
+let RESOURCE_UPDATING: ResourceMetadata | undefined
+
+// prettier-ignore
+export type InferResource<T extends typeof ResourceClass> = 
+	T extends { new (input: infer P): any }
+		? P
+		: never
+
 export interface ResourceMetadata {
 	id: any
 	updatedOn?: Date
@@ -25,12 +37,12 @@ function defineProperties<Resource extends typeof ResourceClass, Shape extends z
 			},
 			set(value) {
 				// Get the last resource metadata, then set the current resource metadata to the one we're updating
-				const lastResourcesMetadata = resourceUpdating
-				resourceUpdating = this._resourceMetadata
+				const lastResourcesMetadata = RESOURCE_UPDATING
+				RESOURCE_UPDATING = this._resourceMetadata
 
 				// Parse the value of the input safely so we can set resourceUpdating back to the last resource metadata
 				const parsedValue = shape[key].safeParse(value)
-				resourceUpdating = lastResourcesMetadata
+				RESOURCE_UPDATING = lastResourcesMetadata
 
 				// If the input is invalid, throw the error, otherwise assign the parsed value to the propValues object
 				if (!parsedValue.success) throw parsedValue.error
@@ -39,14 +51,6 @@ function defineProperties<Resource extends typeof ResourceClass, Shape extends z
 		})
 	}
 }
-
-// prettier-ignore
-export type InferResource<T extends typeof ResourceClass> = 
-	T extends { new (input: infer P): any }
-		? P
-		: never
-
-let resourceUpdating: ResourceMetadata | undefined
 
 export class ResourceClass {
 	constructor(..._params: any[]) {
@@ -185,14 +189,14 @@ export class ResourceClass {
 }
 
 /**
- * Returns a schema that assigns the parsed output to the current {@link resourceUpdating}.
+ * Returns a schema that assigns the parsed output to the current {@link RESOURCE_UPDATING}.
  * @template {z.ZodTypeAny} Schema
  * @param {Schema | undefined} schemaOf
  * The schema to parse the input of, defaults to {@link z.string}.
  */
 function uniqueId<Schema extends z.ZodTypeAny>(schemaOf?: Schema) {
 	return z.unknown().transform((input, ctx) => {
-		if (!resourceUpdating) {
+		if (!RESOURCE_UPDATING) {
 			ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Unexpected resourceUniqueId call" })
 			return z.NEVER
 		}
@@ -202,20 +206,20 @@ function uniqueId<Schema extends z.ZodTypeAny>(schemaOf?: Schema) {
 		const parseResult = parseSchema.parse(input)
 
 		// Assign the current resource's id to the parsed input's data
-		resourceUpdating.id = parseResult
+		RESOURCE_UPDATING.id = parseResult
 		return parseResult as z.infer<Schema>
 	})
 }
 
 /**
- * Returns a schema that assigns the parsed output to the current {@link resourceUpdating}
+ * Returns a schema that assigns the parsed output to the current {@link RESOURCE_UPDATING}
  * @template {z.ZodType<any, any, Date>} Schema
  * @param {Schema} schemaOf
  * The schema to parse the input of, defaults to {@link z.date}
  */
 function updatedOn<Schema extends z.ZodType<Date, any, any>>(schemaOf?: Schema) {
 	return z.unknown().transform((input, ctx) => {
-		if (!resourceUpdating) {
+		if (!RESOURCE_UPDATING) {
 			ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Unexpected resourceUpdatedOn call" })
 			return z.NEVER
 		}
@@ -225,7 +229,7 @@ function updatedOn<Schema extends z.ZodType<Date, any, any>>(schemaOf?: Schema) 
 		const parseResult = parseSchema.parse(input)
 
 		// Assign the current resource's updatedOn to the parsed input's data
-		resourceUpdating.updatedOn = parseResult
+		RESOURCE_UPDATING.updatedOn = parseResult
 		return parseResult
 	})
 }

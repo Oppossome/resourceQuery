@@ -54,6 +54,17 @@ describe("Resource", () => {
 		expect(() => new User(123)).toThrowError()
 	})
 
+	it("should be possible to override a defined property", () => {
+		class Test extends User.resourceExtend({ name: z.string() }) {
+			get name() {
+				return `${super.name}!`
+			}
+		}
+
+		const test = new Test({ id: uuid(), name: "Test" })
+		expect(test.name).toBe("Test!")
+	})
+
 	it("should garbagecollect without issue", async () => {
 		await expectGC(() => new User({ id: "GC-Test", name: "Test" }))
 	})

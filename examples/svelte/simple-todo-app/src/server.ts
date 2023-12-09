@@ -1,5 +1,4 @@
 import { Server } from "miragejs"
-import { v4 as uuid } from "uuid"
 
 declare global {
 	interface Window {
@@ -13,7 +12,6 @@ export default function makeServer() {
 		seeds(server) {
 			server.db.loadData({
 				todos: Array.from({ length: 25 }).map((_, i) => ({
-					id: uuid(),
 					text: `Todo ${i + 1}`,
 					completed: false,
 				})),

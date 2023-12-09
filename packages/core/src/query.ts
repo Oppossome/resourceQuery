@@ -30,17 +30,22 @@ export class Query<Schema extends z.ZodSchema> extends ResourceClass.resourceExt
 	override set result(result: z.infer<Schema> | Error | undefined) {
 		// Order Matters: status goes from "SUCCESS" to "ERROR"
 		if (result instanceof Error) {
-			super.error = result
+			this.error = result
 			super.result = undefined
 		}
 
 		// Order Matters: status goes from "ERROR" to "SUCCESS"
 		super.result = result
-		super.error = undefined
+		this.error = undefined
 	}
 
 	override get error(): Error | undefined {
 		return super.error
+	}
+
+	override set error(error: Error | undefined) {
+		if (error) console.error(error)
+		super.error = error
 	}
 
 	/**

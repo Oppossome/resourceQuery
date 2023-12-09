@@ -7,6 +7,35 @@ import { isObject, type ExtendClass } from "./helpers/types"
 export interface ResourceMetadata {
 	id: any
 	updatedOn?: Date
+	fields: Record<string, unknown>
+	events: {
+		get: (key: string) => unknown
+		set: (key: string, value: unknown) => void
+	}
+}
+
+function defineProperties<Resource extends typeof ResourceClass, Shape extends z.ZodRawShape>(
+	resource: Resource,
+	shape: Shape,
+) {
+	for (const key in shape) {
+		Object.defineProperty(resource.prototype, key, {
+			get() {
+				return this._resourceMetadata.events.get(key)
+			},
+			set(value) {
+				const lastResourcesMetadata = resourceUpdating
+				resourceUpdating = this._resourceMetadata
+
+				const parsedValue = shape[key].safeParse(value)
+				resourceUpdating = lastResourcesMetadata
+
+				// If the input is invalid, throw the error, otherwise assign the parsed value to the propValues object
+				if (!parsedValue.success) throw parsedValue.error
+				this._resourceMetadata.events.set(key, parsedValue.data)
+			},
+		})
+	}
 }
 
 // prettier-ignore
@@ -26,18 +55,25 @@ export class ResourceClass {
 	 * Metadata about the resource.
 	 * @internal
 	 */
-	protected _resourceMetadata: ResourceMetadata = { id: uuid() }
+	protected _resourceMetadata: ResourceMetadata = {
+		id: uuid(),
+		fields: {},
+		events: {
+			get: (key) => {
+				return this._resourceMetadata.fields[key]
+			},
+			set: (key, value) => {
+				this._resourceMetadata.fields[key] = value
+			},
+		},
+	}
 
 	/**
 	 * Utilized by derived classes to define properties on the resource. This gives us
 	 * the ability to define getters and setters with custom functionality in derived classes.
 	 * @internal
 	 */
-	protected _resourceDefineProperty(
-		key: string,
-		schema: z.ZodTypeAny,
-		set?: (value: unknown) => void,
-	) {
+	protected _resourceDefineProperty(key: string, schema: z.ZodTypeAny) {
 		let propValue: unknown
 
 		Object.defineProperty(this, key, {
@@ -54,7 +90,6 @@ export class ResourceClass {
 				// If the input is invalid, throw the error, otherwise assign the parsed value to the propValues object
 				if (!parsedValue.success) throw parsedValue.error
 				propValue = parsedValue.data
-				set?.(propValue)
 			},
 		})
 	}
@@ -127,13 +162,12 @@ export class ResourceClass {
 		type Manager = ResourceManager<This["resourceManager"]["shape"] & NewShape>
 		type ManagerOutput = z.infer<Manager["shapeSchema"]>
 
-		return class Extension extends this {
+		class Extension extends this {
 			public constructor(...input: any[]) {
 				super(...input)
 
 				const objectInput: unknown = input[0] // Grab first parameter, ensure it's an object
 				if (!isObject(objectInput)) throw new Error("Expected input to be an object")
-				for (const key in newShape) this._resourceDefineProperty(key, newShape[key]) // Define properties
 
 				// @ts-expect-error - We're assigning parsed values
 				for (const key in newShape) this[key] = objectInput[key]
@@ -159,7 +193,10 @@ export class ResourceClass {
 				for (const key in newShape) json[key] = this[key]
 				return json
 			}
-		} as ExtendClass<
+		}
+
+		defineProperties(Extension, newShape)
+		return Extension as ExtendClass<
 			This,
 			{
 				new (input: ManagerOutput): This["prototype"] & ManagerOutput
@@ -185,17 +222,11 @@ function uniqueId<Schema extends z.ZodTypeAny>(schemaOf?: Schema) {
 
 		// Parse the input of our schema
 		const parseSchema = schemaOf ?? z.string()
-		const parsedInput = parseSchema.safeParse(input)
-
-		// If the input is invalid, add the issues and return z.NEVER
-		if (!parsedInput.success) {
-			parsedInput.error.addIssues(parsedInput.error.issues)
-			return z.NEVER
-		}
+		const parseResult = parseSchema.parse(input)
 
 		// Assign the current resource's id to the parsed input's data
-		resourceUpdating.id = parsedInput.data
-		return parsedInput.data as z.infer<Schema>
+		resourceUpdating.id = parseResult
+		return parseResult as z.infer<Schema>
 	})
 }
 
@@ -214,17 +245,11 @@ function updatedOn<Schema extends z.ZodType<Date, any, any>>(schemaOf?: Schema) 
 
 		// Parse the input of our schema
 		const parseSchema = schemaOf ?? z.coerce.date()
-		const parsedInput = parseSchema.safeParse(input)
-
-		// If the input is invalid, add the issues and return z.NEVER
-		if (!parsedInput.success) {
-			parsedInput.error.addIssues(parsedInput.error.issues)
-			return z.NEVER
-		}
+		const parseResult = parseSchema.parse(input)
 
 		// Assign the current resource's updatedOn to the parsed input's data
-		resourceUpdating.updatedOn = parsedInput.data
-		return parsedInput.data
+		resourceUpdating.updatedOn = parseResult
+		return parseResult
 	})
 }
 

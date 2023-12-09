@@ -12,6 +12,16 @@ export function useDebouncedCallback(callback: () => void) {
 
 export function applySvelteMixin<Resource extends typeof ResourceClass>(input: Resource) {
 	return class SvelteResource extends input {
+		constructor(...params: any[]) {
+			super(...params)
+
+			const oldSet = this._resourceMetadata.events.set
+			this._resourceMetadata.events.set = (key, value) => {
+				oldSet(key, value)
+				this._dispatchUpdate?.()
+			}
+		}
+
 		/**
 		 * A store that contains the resource. This allows users to subscribe to changes in the resource.
 		 * @internal
@@ -29,15 +39,6 @@ export function applySvelteMixin<Resource extends typeof ResourceClass>(input: R
 		override toJSON(): Record<string, unknown> {
 			const { _resourceStore, ...rest } = super.toJSON()
 			return rest
-		}
-
-		/**
-		 * Override the default _resourceDefineProperty function to update the store when a property is set.
-		 * @internal
-		 */
-		protected override _resourceDefineProperty(key: string, schema: z.ZodTypeAny): void {
-			// Call the original _resourceDefineProperty function, but also update dispatch an update to the store.
-			super._resourceDefineProperty(key, schema, () => this._dispatchUpdate?.())
 		}
 	}
 }

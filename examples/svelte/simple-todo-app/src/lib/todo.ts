@@ -17,7 +17,7 @@ export class PaginatedQuery<
 type PatchTodo = Partial<InferResource<typeof Todo>> & { id: string }
 
 export default class Todo extends Resource.resourceExtend({
-	id: Resource.uniqueId(z.string().uuid()),
+	id: Resource.uniqueId(z.string()),
 	completed: z.boolean(),
 	text: z.string(),
 }) {

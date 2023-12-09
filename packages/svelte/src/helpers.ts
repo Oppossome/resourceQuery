@@ -1,6 +1,5 @@
 import { ResourceClass } from "@resourcequery/core"
 import { Writable, writable } from "svelte/store"
-import { z } from "zod"
 
 export function useDebouncedCallback(callback: () => void) {
 	let timeout: ReturnType<typeof setTimeout> | undefined

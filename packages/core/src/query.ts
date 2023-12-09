@@ -18,7 +18,6 @@ export class Query<Schema extends z.ZodSchema> extends ResourceClass.resourceExt
 	error: z.any(),
 }) {
 	constructor(protected options: QueryOptions<Schema>) {
-		// If the cache key isn't provided, generate a random one.
 		super({ loading: false })
 		this.invalidate()
 	}

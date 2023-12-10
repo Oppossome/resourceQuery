@@ -2,10 +2,11 @@ import { describe, expect, it } from "vitest"
 import { v4 as uuid } from "uuid"
 import { z } from "zod"
 
-import { Resource, uniqueId } from "../resource"
+import { Resource, ResourceClass } from "../resource"
+import { expectGC } from "./helpers"
 
 class User extends Resource.resourceExtend({
-	id: uniqueId(z.string()),
+	id: Resource.uniqueId(z.string()),
 	name: z.string(),
 }) {
 	get mentionStr() {
@@ -48,5 +49,27 @@ describe("Resource", () => {
 
 		// @ts-expect-error - This should throw an error
 		expect(() => new User({ id: 123, name: 123 })).toThrowError()
+
+		// @ts-expect-error - This should throw an error
+		expect(() => new User(123)).toThrowError()
+	})
+
+	it("should be possible to override a defined property", () => {
+		class Test extends ResourceClass.resourceExtend({ name: z.string() }) {
+			override get name() {
+				return `${super.name}!`
+			}
+
+			override set name(value: string) {
+				super.name = value
+			}
+		}
+
+		const test = new Test({ name: "Test" })
+		expect(test.name).toBe("Test!")
+	})
+
+	it("should garbagecollect without issue", async () => {
+		await expectGC(() => new User({ id: "GC-Test", name: "Test" }))
 	})
 })

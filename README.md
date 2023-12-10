@@ -1,1 +1,1 @@
-# resourceLibrary
+# resourceQuery

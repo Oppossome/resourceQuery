@@ -12,8 +12,8 @@ let RESOURCE_UPDATING: ResourceMetadata | undefined
 
 // prettier-ignore
 export type InferResource<T extends typeof ResourceClass> = 
-	T extends { new (input: infer P): any }
-		? P
+	T extends { resourceManager: ResourceManager<infer P> }
+		? z.infer<z.ZodObject<P>>
 		: never
 
 export interface ResourceMetadata {

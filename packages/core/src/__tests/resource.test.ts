@@ -69,6 +69,13 @@ describe("Resource", () => {
 		expect(test.name).toBe("Test!")
 	})
 
+	it("should be possible to utilize a field with a different input than output", () => {
+		class Test extends Resource.resourceExtend({ id: z.string().pipe(z.coerce.number()) }) {}
+
+		const test = new Test({ id: "123" })
+		expect(test.id).toBe(123)
+	})
+
 	it("should garbagecollect without issue", async () => {
 		await expectGC(() => new User({ id: "GC-Test", name: "Test" }))
 	})

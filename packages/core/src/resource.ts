@@ -12,9 +12,7 @@ let RESOURCE_UPDATING: ResourceMetadata | undefined
 
 // prettier-ignore
 export type InferResource<T extends typeof ResourceClass> = 
-	T extends { resourceManager: ResourceManager<infer P> }
-		? z.infer<z.ZodObject<P>>
-		: never
+	z.infer<T["resourceManager"]["shapeSchema"]>
 
 export interface ResourceMetadata {
 	id: any
@@ -141,6 +139,7 @@ export class ResourceClass {
 		// Manually type the manager class due to weirdness with the This type
 		type Manager = ResourceManager<This["resourceManager"]["shape"] & NewShape>
 		type ManagerOutput = z.infer<Manager["shapeSchema"]>
+		type ManagerInput = z.input<Manager["shapeSchema"]>
 
 		class Extension extends this {
 			public constructor(...input: any[]) {
@@ -180,7 +179,7 @@ export class ResourceClass {
 		return Extension as ExtendClass<
 			This,
 			{
-				new (input: ManagerOutput): This["prototype"] & ManagerOutput
+				new (input: ManagerInput): This["prototype"] & ManagerOutput
 				prototype: This["prototype"] & ManagerOutput
 				resourceManager: Manager
 			}

@@ -179,6 +179,8 @@ export class ResourceClass {
 		return Extension as ExtendClass<
 			This,
 			{
+				// Unable to define the dynamic properties as an accurate getter/setter pair
+				// https://github.com/microsoft/TypeScript/issues/43826
 				new (input: ManagerInput): This["prototype"] & ManagerOutput
 				prototype: This["prototype"] & ManagerOutput
 				resourceManager: Manager

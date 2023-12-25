@@ -1,6 +1,6 @@
 import { z } from "zod"
 
-import { ResourceClass } from "./resource"
+import { Class as ResourceClass } from "./resource"
 
 export class ResourceManager<Shape extends z.ZodRawShape> {
 	constructor(public shape: Shape) {}

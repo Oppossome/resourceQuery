@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest"
 import { v4 as uuid } from "uuid"
 import { z } from "zod"
 
-import { Resource, ResourceClass } from "../resource"
+import * as Resource from "../resource"
 import { expectGC } from "./helpers"
 
 class User extends Resource.resourceExtend({
@@ -55,7 +55,7 @@ describe("Resource", () => {
 	})
 
 	it("should be possible to override a defined property", () => {
-		class Test extends ResourceClass.resourceExtend({ name: z.string() }) {
+		class Test extends Resource.resourceExtend({ name: z.string() }) {
 			override get name() {
 				return `${super.name}!`
 			}

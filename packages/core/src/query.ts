@@ -1,8 +1,8 @@
 import { z } from "zod"
 
-import { ResourceClass } from "./resource"
+import { Class as ResourceClass } from "./resource"
 
-export interface QueryOptions<Schema extends z.ZodSchema> {
+interface QueryOptions<Schema extends z.ZodSchema> {
 	schema: Schema
 	query: (this: Query<Schema>, schema: Schema) => Promise<z.infer<Schema> | undefined>
 }

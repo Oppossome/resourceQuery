@@ -8,13 +8,13 @@ import { isObject, type ExtendClass } from "./helpers/types"
  * The resource that is currently being updated.
  * @internal
  */
-let RESOURCE_UPDATING: ResourceMetadata | undefined
+let RESOURCE_UPDATING: Metadata | undefined
 
 // prettier-ignore
-export type InferResource<T extends typeof ResourceClass> = 
+export type infer<T extends typeof Class> = 
 	z.infer<T["resourceManager"]["shapeSchema"]>
 
-export interface ResourceMetadata {
+interface Metadata {
 	id: any
 	updatedOn?: Date
 	fields: Record<string, unknown>
@@ -24,7 +24,7 @@ export interface ResourceMetadata {
 	}
 }
 
-function defineProperties<Resource extends typeof ResourceClass, Shape extends z.ZodRawShape>(
+function defineProperties<Resource extends typeof Class, Shape extends z.ZodRawShape>(
 	resource: Resource,
 	shape: Shape,
 ) {
@@ -50,7 +50,7 @@ function defineProperties<Resource extends typeof ResourceClass, Shape extends z
 	}
 }
 
-export class ResourceClass {
+export class Class {
 	constructor(..._params: any[]) {
 		// Do absolutely nothing
 	}
@@ -59,7 +59,7 @@ export class ResourceClass {
 	 * Metadata about the resource.
 	 * @internal
 	 */
-	protected _resourceMetadata: ResourceMetadata = {
+	protected _resourceMetadata: Metadata = {
 		id: uuid(),
 		fields: {},
 		events: {
@@ -105,7 +105,7 @@ export class ResourceClass {
 	 * })
 	 * ```
 	 */
-	static resourceSchema<This extends typeof ResourceClass>(this: This) {
+	static resourceSchema<This extends typeof Class>(this: This) {
 		return z.record(z.unknown()).transform((input) => new this(input) as InstanceType<This>)
 	}
 
@@ -132,7 +132,7 @@ export class ResourceClass {
 	 * }
 	 * ```
 	 */
-	static resourceExtend<This extends typeof ResourceClass, NewShape extends z.ZodRawShape>(
+	static resourceExtend<This extends typeof Class, NewShape extends z.ZodRawShape>(
 		this: This,
 		newShape: NewShape,
 	) {
@@ -190,12 +190,39 @@ export class ResourceClass {
 }
 
 /**
+ * Extends the current resource with the provided shape.
+ * @example
+ * ```ts
+ * class User extends ResourceClass.resourceExtend({
+ * 	id: uniqueId(z.string()),
+ * 	discriminator: z.number(),
+ * 	name: z.string(),
+ * }) {
+ * 	public get displayName() {
+ * 		return `${this.name}#${this.discriminator}`
+ * 	}
+ * }
+ *
+ * class Admin extends User.resourceExtend({
+ * 	permissions: z.array(z.string()),
+ * }) {
+ * 	public get adminDisplayName() {
+ *		return `${this.displayName} (${this.permissions.length} permissions)`
+ * 	}
+ * }
+ * ```
+ */
+export function resourceExtend<NewShape extends z.ZodRawShape>(newShape: NewShape) {
+	return Class.resourceExtend(newShape)
+}
+
+/**
  * Returns a schema that assigns the parsed output to the current {@link RESOURCE_UPDATING}.
  * @template {z.ZodTypeAny} Schema
  * @param {Schema | undefined} schemaOf
  * The schema to parse the input of, defaults to {@link z.string}.
  */
-function uniqueId<Schema extends z.ZodTypeAny>(schemaOf?: Schema) {
+export function uniqueId<Schema extends z.ZodTypeAny>(schemaOf?: Schema) {
 	return z.unknown().transform((input, ctx) => {
 		if (!RESOURCE_UPDATING) {
 			ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Unexpected resourceUniqueId call" })
@@ -218,7 +245,7 @@ function uniqueId<Schema extends z.ZodTypeAny>(schemaOf?: Schema) {
  * @param {Schema} schemaOf
  * The schema to parse the input of, defaults to {@link z.date}
  */
-function updatedOn<Schema extends z.ZodType<Date, any, any>>(schemaOf?: Schema) {
+export function updatedOn<Schema extends z.ZodType<Date, any, any>>(schemaOf?: Schema) {
 	return z.unknown().transform((input, ctx) => {
 		if (!RESOURCE_UPDATING) {
 			ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Unexpected resourceUpdatedOn call" })
@@ -233,11 +260,4 @@ function updatedOn<Schema extends z.ZodType<Date, any, any>>(schemaOf?: Schema) 
 		RESOURCE_UPDATING.updatedOn = parseResult
 		return parseResult
 	})
-}
-
-export const Resource = {
-	resourceExtend: <NewShape extends z.ZodRawShape>(shape: NewShape) =>
-		ResourceClass.resourceExtend(shape),
-	updatedOn,
-	uniqueId,
 }

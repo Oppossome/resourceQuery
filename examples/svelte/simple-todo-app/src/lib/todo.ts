@@ -1,4 +1,4 @@
-import { Query, Resource, type InferResource } from "@resourcequery/svelte"
+import { Query, Resource } from "@resourcequery/svelte"
 import { z } from "zod"
 
 export class PaginatedQuery<
@@ -14,7 +14,7 @@ export class PaginatedQuery<
 	}
 }
 
-type PatchTodo = Partial<InferResource<typeof Todo>> & { id: string }
+type PatchTodo = Partial<Resource.infer<typeof Todo>> & { id: string }
 
 export default class Todo extends Resource.resourceExtend({
 	id: Resource.uniqueId(z.string()),

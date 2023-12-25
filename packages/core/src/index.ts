@@ -1,1 +1,2 @@
-export * as rq from "./external"
+export * as Resource from "./resource"
+export * as Query from "./query"

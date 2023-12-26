@@ -1,5 +1,5 @@
 export class WeakValueMap<T extends object> {
-	#map = new WeakMap<any, WeakRef<T>>()
+	#map = new Map<any, WeakRef<T>>()
 
 	#registry = new FinalizationRegistry((key: string) => {
 		this.#map.delete(key)

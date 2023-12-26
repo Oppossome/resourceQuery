@@ -11,6 +11,10 @@ import { isObject, type ExtendClass } from "./helpers/types"
 let RESOURCE_UPDATING: Metadata | undefined
 
 // prettier-ignore
+export type input<T extends typeof Class> = 
+	z.input<T["resourceManager"]["shapeSchema"]>
+
+// prettier-ignore
 export type infer<T extends typeof Class> = 
 	z.infer<T["resourceManager"]["shapeSchema"]>
 
@@ -152,7 +156,7 @@ export class Class {
 				for (const key in newShape) this[key] = objectInput[key]
 
 				const storedResources = Extension.resourceManager.resourceStorage
-				const storedResource = storedResources.get(this._resourceMetadata.id)?.deref()
+				const storedResource = storedResources.get(this._resourceMetadata.id)
 
 				// If the resource already exists, update the values and return it
 				if (storedResource) {
@@ -161,7 +165,7 @@ export class Class {
 					return storedResource
 				}
 
-				storedResources.set(this._resourceMetadata.id, new WeakRef(this))
+				storedResources.set(this._resourceMetadata.id, this)
 			}
 
 			static override resourceManager = super.resourceManager.shapeExtend(newShape)

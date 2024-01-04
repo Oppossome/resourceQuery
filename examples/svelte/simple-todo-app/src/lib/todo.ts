@@ -3,7 +3,7 @@ import { z } from "zod"
 
 export class PaginatedQuery<
 	Schema extends z.ZodSchema<{ next_page?: number }>,
-> extends Query<Schema> {
+> extends Query.Class<Schema> {
 	public get canLoadMore() {
 		return !this.loading && this.result?.next_page !== undefined
 	}
@@ -11,6 +11,10 @@ export class PaginatedQuery<
 	public nextPage() {
 		if (!this.result?.next_page) return // No next page or occupied
 		this.invalidate()
+	}
+
+	static override defineQuery<Schema extends z.ZodSchema>(options: Query.Options<Schema>) {
+		return new PaginatedQuery<Schema>(options)
 	}
 }
 
@@ -30,7 +34,7 @@ export default class Todo extends Resource.resourceExtend({
 	}
 
 	static patch(update: PatchTodo) {
-		return new Query({
+		return PaginatedQuery.defineQuery({
 			schema: z.object({ todo: Todo.resourceSchema() }),
 			query: async function (schema) {
 				const response = await fetch(`/api/todos`, {
@@ -44,7 +48,7 @@ export default class Todo extends Resource.resourceExtend({
 	}
 
 	static fetch() {
-		return new PaginatedQuery({
+		return PaginatedQuery.defineQuery({
 			schema: z.object({
 				todos: z.array(Todo.resourceSchema()),
 				next_page: z.number().optional(),

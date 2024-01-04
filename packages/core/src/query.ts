@@ -1,10 +1,10 @@
 import { z } from "zod"
 
-import { Class as ResourceClass } from "./resource"
+import * as Resource from "./resource"
 
-interface QueryOptions<Schema extends z.ZodSchema> {
+export interface Options<Schema extends z.ZodSchema> {
 	schema: Schema
-	query: (this: Query<Schema>, schema: Schema) => Promise<z.infer<Schema> | undefined>
+	query: (this: Class<Schema>, schema: Schema) => Promise<z.infer<Schema> | undefined>
 }
 
 /**
@@ -12,12 +12,12 @@ interface QueryOptions<Schema extends z.ZodSchema> {
  * @template CacheKey The type of the cache key.
  * @template Result The type of the result.
  */
-export class Query<Schema extends z.ZodSchema> extends ResourceClass.resourceExtend({
+export class Class<Schema extends z.ZodSchema> extends Resource.Class.resourceExtend({
 	loading: z.boolean(),
 	result: z.any(),
 	error: z.any(),
 }) {
-	constructor(protected options: QueryOptions<Schema>) {
+	constructor(protected options: Options<Schema>) {
 		super({ loading: false })
 		this.invalidate()
 	}
@@ -67,4 +67,15 @@ export class Query<Schema extends z.ZodSchema> extends ResourceClass.resourceExt
 
 		this.loading = false
 	}
+
+	static defineQuery<Schema extends z.ZodSchema>(options: Options<Schema>) {
+		return new Class<Schema>(options)
+	}
+}
+
+/**
+ * Creates a new Query with the given options.
+ */
+export function defineQuery<Schema extends z.ZodSchema>(options: Options<Schema>) {
+	return Class.defineQuery<Schema>(options)
 }

@@ -24,7 +24,7 @@ describe("helpers", () => {
 		})
 
 		it("Should resolve to a known result", async () => {
-			const myQuery = new Query({
+			const myQuery = Query.defineQuery({
 				schema: z.object({ test: TestResource.resourceSchema() }),
 				query: async function (schema) {
 					return schema.parse({ test: { value: 123 } })

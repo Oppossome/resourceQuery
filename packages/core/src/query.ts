@@ -2,9 +2,14 @@ import { z } from "zod"
 
 import * as Resource from "./resource"
 
-export interface Options<Schema extends z.ZodSchema> {
+export interface QueryOptions<Schema extends z.ZodSchema, Args extends any[]> {
 	schema: Schema
-	query: (this: Class<Schema>, schema: Schema) => Promise<z.infer<Schema> | undefined>
+	getCacheKey?: (...params: Args) => string
+	query: (
+		this: Query<Schema, any[]>,
+		schema: Schema,
+		...args: Args
+	) => Promise<z.infer<Schema> | undefined>
 }
 
 /**
@@ -12,13 +17,23 @@ export interface Options<Schema extends z.ZodSchema> {
  * @template CacheKey The type of the cache key.
  * @template Result The type of the result.
  */
-export class Class<Schema extends z.ZodSchema> extends Resource.Class.resourceExtend({
+export class Query<
+	Schema extends z.ZodSchema,
+	Args extends any[],
+> extends Resource.Class.resourceExtend({
 	loading: z.boolean(),
 	result: z.any(),
 	error: z.any(),
 }) {
-	constructor(protected options: Options<Schema>) {
+	protected queryArgs!: Args
+
+	constructor(
+		protected options: QueryOptions<Schema, Args>,
+		...args: Args
+	) {
 		super({ loading: false })
+
+		this.queryArgs = args
 		this.invalidate()
 	}
 
@@ -57,7 +72,8 @@ export class Class<Schema extends z.ZodSchema> extends Resource.Class.resourceEx
 
 		// Run the query, and set the result if its returned.
 		try {
-			const result = await this.options.query.call(this, this.options.schema)
+			// @ts-expect-error - Because the query method is passed any[] for Args to prevent self-referencing
+			const result = await this.options.query.call(this, this.options.schema, ...this.queryArgs)
 			if (result !== undefined) this.result = result
 		} catch (error) {
 			if (error instanceof Error) this.result = error
@@ -68,14 +84,11 @@ export class Class<Schema extends z.ZodSchema> extends Resource.Class.resourceEx
 		this.loading = false
 	}
 
-	static defineQuery<Schema extends z.ZodSchema>(options: Options<Schema>) {
-		return new Class<Schema>(options)
+	static define<
+		This extends { new (options: QueryOptions<Schema, Args>, ...args: Args): InstanceType<This> },
+		Schema extends z.ZodSchema,
+		Args extends any[],
+	>(options: QueryOptions<Schema, Args>) {
+		return (...args: Args) => new this(options, ...args)
 	}
-}
-
-/**
- * Creates a new Query with the given options.
- */
-export function defineQuery<Schema extends z.ZodSchema>(options: Options<Schema>) {
-	return Class.defineQuery<Schema>(options)
 }

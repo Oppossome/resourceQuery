@@ -3,7 +3,8 @@ import { z } from "zod"
 
 export class PaginatedQuery<
 	Schema extends z.ZodSchema<{ next_page?: number }>,
-> extends Query.Class<Schema> {
+	Args extends any[],
+> extends Query<Schema, Args> {
 	public get canLoadMore() {
 		return !this.loading && this.result?.next_page !== undefined
 	}
@@ -11,10 +12,6 @@ export class PaginatedQuery<
 	public nextPage() {
 		if (!this.result?.next_page) return // No next page or occupied
 		this.invalidate()
-	}
-
-	static override defineQuery<Schema extends z.ZodSchema>(options: Query.Options<Schema>) {
-		return new PaginatedQuery<Schema>(options)
 	}
 }
 
@@ -33,36 +30,32 @@ export default class Todo extends Resource.resourceExtend({
 		return Todo.patch({ ...input, id: this.id })
 	}
 
-	static patch(update: PatchTodo) {
-		return PaginatedQuery.defineQuery({
-			schema: z.object({ todo: Todo.resourceSchema() }),
-			query: async function (schema) {
-				const response = await fetch(`/api/todos`, {
-					body: JSON.stringify(update),
-					method: "PATCH",
-				})
+	static patch = PaginatedQuery.define({
+		schema: z.object({ todo: Todo.resourceSchema() }),
+		query: async function (schema, update: PatchTodo) {
+			const response = await fetch(`/api/todos`, {
+				body: JSON.stringify(update),
+				method: "PATCH",
+			})
 
-				return schema.parse(await response.json())
-			},
-		})
-	}
+			return schema.parse(await response.json())
+		},
+	})
 
-	static fetch() {
-		return PaginatedQuery.defineQuery({
-			schema: z.object({
-				todos: z.array(Todo.resourceSchema()),
-				next_page: z.number().optional(),
-			}),
-			query: async function (schema) {
-				const response = await fetch(`/api/todos?pageOffset=${this.result?.next_page ?? 0}`)
-				const result = schema.parse(await response.json())
-				if (!this.result) return result
+	static fetch = PaginatedQuery.define({
+		schema: z.object({
+			todos: z.array(Todo.resourceSchema()),
+			next_page: z.number().optional(),
+		}),
+		query: async function (schema) {
+			const response = await fetch(`/api/todos?pageOffset=${this.result?.next_page ?? 0}`)
+			const result = schema.parse(await response.json())
+			if (!this.result) return result
 
-				return {
-					...result,
-					todos: [...this.result.todos, ...result.todos],
-				}
-			},
-		})
-	}
+			return {
+				...result,
+				todos: [...this.result.todos, ...result.todos],
+			}
+		},
+	})
 }

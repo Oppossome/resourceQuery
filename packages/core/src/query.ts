@@ -84,11 +84,9 @@ export class Query<
 		this.loading = false
 	}
 
-	static define<
-		This extends { new (options: QueryOptions<Schema, Args>, ...args: Args): InstanceType<This> },
-		Schema extends z.ZodSchema,
-		Args extends any[],
-	>(options: QueryOptions<Schema, Args>) {
+	static define<Schema extends z.ZodSchema, Args extends any[]>(
+		options: QueryOptions<Schema, Args>,
+	) {
 		return (...args: Args) => new this(options, ...args)
 	}
 }

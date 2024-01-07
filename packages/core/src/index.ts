@@ -1,2 +1,2 @@
-export { Resource, ResourceClass, type InferResource } from "./resource"
-export { Query, type QueryOptions } from "./query"
+export * as Resource from "./resource"
+export { Query, QueryManager, QueryOptions } from "./query"

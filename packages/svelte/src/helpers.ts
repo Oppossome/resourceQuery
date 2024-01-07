@@ -1,4 +1,4 @@
-import { ResourceClass } from "@resourcequery/core"
+import { Resource } from "@resourcequery/core"
 import { Writable, writable } from "svelte/store"
 
 export function useDebouncedCallback(callback: () => void) {
@@ -9,7 +9,7 @@ export function useDebouncedCallback(callback: () => void) {
 	}
 }
 
-export function applySvelteMixin<Resource extends typeof ResourceClass>(input: Resource) {
+export function applySvelteMixin<Resource extends typeof Resource.Class>(input: Resource) {
 	return class SvelteResource extends input {
 		constructor(...params: any[]) {
 			super(...params)

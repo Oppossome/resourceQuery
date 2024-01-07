@@ -1,4 +1,4 @@
-import { Query, Resource } from "@resourcequery/svelte"
+import { Query, Resource, QueryManager, type QueryOptions } from "@resourcequery/svelte"
 import { z } from "zod"
 
 export class PaginatedQuery<
@@ -12,6 +12,14 @@ export class PaginatedQuery<
 	public nextPage() {
 		if (!this.result?.next_page) return // No next page or occupied
 		this.invalidate()
+	}
+
+	static override define<Schema extends z.ZodSchema, Args extends any[]>(
+		options: QueryOptions<Schema, Args>,
+	) {
+		return new QueryManager<Schema, Args>(options, (...args) => {
+			return new PaginatedQuery(options, ...args)
+		}).builder
 	}
 }
 

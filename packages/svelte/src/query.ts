@@ -1,4 +1,4 @@
-import { Query as BaseQuery } from "@resourcequery/core/src/query"
+import { Query as BaseQuery, QueryManager, QueryOptions } from "@resourcequery/core/src/query"
 import { z } from "zod"
 
 import { applySvelteMixin } from "./helpers"
@@ -16,5 +16,13 @@ export class Query<Schema extends z.ZodSchema, Args extends any[]> extends apply
 				setTimeout(unsub)
 			})
 		})
+	}
+
+	static override define<Schema extends z.ZodSchema, Args extends any[]>(
+		options: QueryOptions<Schema, Args>,
+	) {
+		return new QueryManager<Schema, Args>(options, (...args) => {
+			return new Query(options, ...args)
+		}).builder
 	}
 }

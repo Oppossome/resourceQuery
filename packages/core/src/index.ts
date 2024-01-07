@@ -1,2 +1,2 @@
 export * as Resource from "./resource"
-export { Query, QueryOptions } from "./query"
+export { Query, QueryManager, QueryOptions } from "./query"

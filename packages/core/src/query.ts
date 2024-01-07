@@ -1,10 +1,15 @@
 import { z } from "zod"
 
 import * as Resource from "./resource"
+import { WeakValueMap } from "./helpers/helpers"
 
 export interface QueryOptions<Schema extends z.ZodSchema, Args extends any[]> {
 	schema: Schema
-	getCacheKey?: (...params: Args) => string
+	/**
+	 * Provide a this that makes it easier to access some useful things.
+	 *  - serializeObject: Stringifies the arguments {Sorted Object Keys}
+	 */
+	getCacheKey?: (...args: Args) => string
 	query: (
 		this: Query<Schema, any[]>,
 		schema: Schema,
@@ -84,9 +89,60 @@ export class Query<
 		this.loading = false
 	}
 
+	/**
+	 * Defines a query function.
+	 * @param options The options for the query.
+	 * @returns A query builder.
+	 */
 	static define<Schema extends z.ZodSchema, Args extends any[]>(
 		options: QueryOptions<Schema, Args>,
 	) {
-		return (...args: Args) => new this(options, ...args)
+		return new QueryManager<Schema, Args>(options, (...args) => {
+			return new Query(options, ...args)
+		}).builder
+	}
+}
+
+// prettier-ignore
+export type QueryBuilder<
+	Schema extends z.ZodSchema = any,
+	Args extends any[] = any
+> =
+	QueryManager<Schema, Args>["builder"]
+
+export class QueryManager<Schema extends z.ZodSchema, Args extends any[]> {
+	protected static managerLookup = new Map<QueryBuilder, QueryManager<any, any>>()
+	queryCache = new WeakValueMap<Query<Schema, Args>>()
+
+	constructor(
+		protected options: QueryOptions<Schema, Args>,
+		protected callback: (...args: Args) => Query<Schema, Args>,
+	) {
+		QueryManager.managerLookup.set(this.builder, this)
+	}
+
+	getCacheKey(...args: Args) {
+		const defaultCachekey = JSON.stringify(args)
+		return this.options.getCacheKey?.(...args) ?? defaultCachekey
+	}
+
+	builder = (...args: Args) => {
+		// Stringify the arguments for now, the user gets the option to override this.
+		const cacheKey = this.getCacheKey(...args)
+
+		// If the query is already cached, return it.
+		const cachedValue = this.queryCache.get(cacheKey)
+		if (cachedValue) return cachedValue
+
+		// If the query is not cached, run it and cache it.
+		const uncachedValue = this.callback(...args)
+		this.queryCache.set(cacheKey, uncachedValue)
+		return uncachedValue
+	}
+
+	static getManager<Schema extends z.ZodSchema, Args extends any[]>(
+		builder: QueryBuilder<Schema, Args>,
+	): QueryManager<Schema, Args> | undefined {
+		return this.managerLookup.get(builder) as QueryManager<Schema, Args> | undefined
 	}
 }

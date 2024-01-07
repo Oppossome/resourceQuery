@@ -1,5 +1,5 @@
 export class WeakValueMap<T extends object> {
-	#map = new Map<any, WeakRef<T>>()
+	#map = new Map<string, WeakRef<T>>()
 
 	#registry = new FinalizationRegistry((key: string) => {
 		this.#map.delete(key)
@@ -30,5 +30,13 @@ export class WeakValueMap<T extends object> {
 	public has(key: any): boolean {
 		key = this.serializeKey(key)
 		return this.#map.has(key)
+	}
+
+	public *entries(): IterableIterator<[string, T]> {
+		/** Iterate through the value map of the  */
+		for (const [key, value] of this.#map.entries()) {
+			const derefValue = value.deref()
+			if (derefValue) yield [key, derefValue]
+		}
 	}
 }

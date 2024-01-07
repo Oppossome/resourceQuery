@@ -46,4 +46,20 @@ describe("Query", () => {
 
 		expect(querySpy).toHaveBeenCalledTimes(2)
 	})
+
+	it("Should utilize the provided cacheKey function", async () => {
+		const { query, options } = generateQuery({ getCacheKey: () => "test" })
+		const querySpy = vi.spyOn(options, "query")
+
+		expect(querySpy).not.toHaveBeenCalled()
+		query("test")
+
+		expect(querySpy).toHaveBeenCalledTimes(1)
+		query("test")
+
+		expect(querySpy).toHaveBeenCalledTimes(1)
+		query("test2")
+
+		expect(querySpy).toHaveBeenCalledTimes(1)
+	})
 })

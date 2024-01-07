@@ -21,7 +21,7 @@ export class Query<Schema extends z.ZodSchema, Args extends any[]> extends apply
 	static override define<Schema extends z.ZodSchema, Args extends any[]>(
 		options: QueryOptions<Schema, Args>,
 	) {
-		return new QueryManager<Schema, Args>(options, (...args) => {
+		return new QueryManager<Schema, Args, Query<Schema, Args>>(options, (...args) => {
 			return new Query(options, ...args)
 		}).builder
 	}

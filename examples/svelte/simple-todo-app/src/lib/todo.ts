@@ -17,7 +17,7 @@ export class PaginatedQuery<
 	static override define<Schema extends z.ZodSchema, Args extends any[]>(
 		options: QueryOptions<Schema, Args>,
 	) {
-		return new QueryManager<Schema, Args>(options, (...args) => {
+		return new QueryManager(options, (...args) => {
 			return new PaginatedQuery(options, ...args)
 		}).builder
 	}

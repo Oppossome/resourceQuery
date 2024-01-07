@@ -3,8 +3,6 @@
   import Item from "./Item.svelte"
 
   $: todoQuery = Todo.fetch()
-
-  todoQuery.
 </script>
 
 {#each $todoQuery.result?.todos ?? [] as todo}

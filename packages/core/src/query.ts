@@ -97,7 +97,7 @@ export class Query<
 	static define<Schema extends z.ZodSchema, Args extends any[]>(
 		options: QueryOptions<Schema, Args>,
 	) {
-		return new QueryManager<Schema, Args>(options, (...args) => {
+		return new QueryManager<Schema, Args, Query<Schema, Args>>(options, (...args) => {
 			return new Query(options, ...args)
 		}).builder
 	}
@@ -106,17 +106,22 @@ export class Query<
 // prettier-ignore
 export type QueryBuilder<
 	Schema extends z.ZodSchema = any,
-	Args extends any[] = any
+	Args extends any[] = any,
+	Result extends Query<any, any> = any
 > =
-	QueryManager<Schema, Args>["builder"]
+	QueryManager<Schema, Args, Result>["builder"]
 
-export class QueryManager<Schema extends z.ZodSchema, Args extends any[]> {
-	protected static managerLookup = new Map<QueryBuilder, QueryManager<any, any>>()
+export class QueryManager<
+	Schema extends z.ZodSchema,
+	Args extends any[],
+	Result extends Query<any, any>,
+> {
+	protected static managerLookup = new Map<QueryBuilder, QueryManager<any, any, any>>()
 	queryCache = new WeakValueMap<Query<Schema, Args>>()
 
 	constructor(
 		protected options: QueryOptions<Schema, Args>,
-		protected callback: (...args: Args) => Query<Schema, Args>,
+		protected callback: (...args: Args) => Result,
 	) {
 		QueryManager.managerLookup.set(this.builder, this)
 	}
@@ -132,17 +137,17 @@ export class QueryManager<Schema extends z.ZodSchema, Args extends any[]> {
 
 		// If the query is already cached, return it.
 		const cachedValue = this.queryCache.get(cacheKey)
-		if (cachedValue) return cachedValue
+		if (cachedValue) return cachedValue as Result
 
 		// If the query is not cached, run it and cache it.
 		const uncachedValue = this.callback(...args)
 		this.queryCache.set(cacheKey, uncachedValue)
-		return uncachedValue
+		return uncachedValue as Result
 	}
 
-	static getManager<Schema extends z.ZodSchema, Args extends any[]>(
-		builder: QueryBuilder<Schema, Args>,
-	): QueryManager<Schema, Args> | undefined {
-		return this.managerLookup.get(builder) as QueryManager<Schema, Args> | undefined
+	static getManager<Schema extends z.ZodSchema, Args extends any[], Result extends Query<any, any>>(
+		builder: QueryBuilder<Schema, Args, Result>,
+	): QueryManager<Schema, Args, Result> | undefined {
+		return this.managerLookup.get(builder) as QueryManager<Schema, Args, Result> | undefined
 	}
 }

@@ -23,7 +23,6 @@ module.exports = {
 		},
 	],
 	rules: {
-		"prettier/prettier": "error",
 		"@typescript-eslint/no-explicit-any": "off",
 		"@typescript-eslint/ban-types": "off",
 		"import/no-unresolved": "off",

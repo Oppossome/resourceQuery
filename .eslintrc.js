@@ -14,7 +14,7 @@ module.exports = {
 		"plugin:@typescript-eslint/recommended",
 		"plugin:import/recommended",
 	],
-	plugins: ["@typescript-eslint", "prettier"],
+	plugins: ["@typescript-eslint"],
 	overrides: [
 		{
 			env: { node: true },

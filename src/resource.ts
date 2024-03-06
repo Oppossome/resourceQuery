@@ -36,7 +36,7 @@ export class Resource {
 		const newMetadata = {
 			// For some reason, this is the only way to get the type to work correctly :/
 			schema: { ...Metadata.get(this).schema, ...schema } as Metadata.Get<This>["schema"] & Schema,
-			storage: new Weak.ValueMap(),
+			storage: new Weak.ValueMap<string, object>(),
 		}
 
 		type Object = z.ZodObject<(typeof newMetadata)["schema"]>
@@ -68,10 +68,9 @@ export class Resource {
 					parsedInput[schemaKey] = parsedValue.data
 				}
 
-				// Restore the former metadata
 				CURRENT_METADATA = lastMetadata
 
-				// If the object already exists, update it with the parsed input and return it
+				// Assign the parsed input to the correct object, and store it in the storage map if necessary
 				const targetObject = newMetadata.storage.get(currentMetadata.uniqueId) ?? this
 				if (targetObject !== this) newMetadata.storage.set(currentMetadata.uniqueId, targetObject)
 				Object.assign(targetObject, parsedInput)

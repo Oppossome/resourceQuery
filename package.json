@@ -3,7 +3,7 @@
 	"description": "A library for managing resources and queries",
 	"version": "0.0.0",
 	"scripts": {
-		"test": "yarn node --expose-gc \"$(yarn bin vitest)\"",
+		"test": "yarn vitest",
 		"test:types": "vitest --typecheck",
 		"lint": "eslint . && prettier . --check",
 		"lint:fix": "eslint . --fix && prettier . --write"

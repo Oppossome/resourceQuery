@@ -63,7 +63,6 @@ export class Resource {
 					// If the input is invalid, restore the last metadata and throw an error
 					if (!parsedValue.success) {
 						RESOURCE_UPDATING = lastMetadata
-
 						const error = parsedValue.error.errors.at(0)?.message ?? "Unknown Error"
 						throw new Error(`Invalid Input - ${error}`)
 					}

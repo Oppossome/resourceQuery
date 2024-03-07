@@ -3,7 +3,8 @@ import { v4 as uuid } from "uuid"
 
 import { Metadata, Weak } from "./helpers"
 
-interface ResourceMetadata {
+interface ResourceMetadata<This extends Resource> {
+	onUpdate: Weak.EventBus<This>
 	uniqueId: string
 }
 
@@ -12,16 +13,17 @@ interface StaticResourceMetadata {
 	storage: Weak.ValueMap<string, Resource>
 }
 
-let RESOURCE_UPDATING: ResourceMetadata | undefined
+let RESOURCE_UPDATING: ResourceMetadata<any> | undefined
 
 export class Resource {
 	constructor(..._params: any[]) {
 		// Do absolutely nothing
 	}
 
-	[Metadata.key] = {
+	[Metadata.key]: ResourceMetadata<this> = {
+		onUpdate: new Weak.EventBus(),
 		uniqueId: uuid(),
-	} satisfies ResourceMetadata
+	}
 
 	// === Static Methods ===
 
@@ -91,11 +93,11 @@ export class Resource {
 
 /**
  * Returns a schema that assigns the parsed output to the current {@link RESOURCE_UPDATING}.
- * @template {z.ZodTypeAny} Schema
+ * @template {z.ZodSchema<string>} Schema
  * @param {Schema | undefined} schemaOf
  * The schema to parse the input of, defaults to {@link z.string}.
  */
-export function uniqueId<Schema extends z.ZodTypeAny>(schemaOf?: Schema) {
+export function uniqueId<Schema extends z.ZodSchema<string>>(schemaOf?: Schema) {
 	return z.unknown().transform((input, ctx) => {
 		if (!RESOURCE_UPDATING) {
 			ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Unexpected uniqueId call" })
@@ -108,6 +110,6 @@ export function uniqueId<Schema extends z.ZodTypeAny>(schemaOf?: Schema) {
 
 		// Assign the current resource's id to the parsed input's data
 		RESOURCE_UPDATING.uniqueId = parseResult
-		return parseResult as z.infer<Schema>
+		return parseResult as string
 	})
 }

@@ -63,7 +63,9 @@ export class Resource {
 					// If the input is invalid, restore the last metadata and throw an error
 					if (!parsedValue.success) {
 						RESOURCE_UPDATING = lastMetadata
-						throw new Error("Invalid Input - " + parsedValue.error.errors[0].message)
+
+						const error = parsedValue.error.errors.at(0)?.message ?? "Unknown Error"
+						throw new Error(`Invalid Input - ${error}`)
 					}
 
 					parsedInput[schemaKey] = parsedValue.data
@@ -97,7 +99,7 @@ export class Resource {
 export function uniqueId<Schema extends z.ZodTypeAny>(schemaOf?: Schema) {
 	return z.unknown().transform((input, ctx) => {
 		if (!RESOURCE_UPDATING) {
-			ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Unexpected resourceUniqueId call" })
+			ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Unexpected uniqueId call" })
 			return z.NEVER
 		}
 

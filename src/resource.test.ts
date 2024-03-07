@@ -34,4 +34,11 @@ describe("Resource", () => {
 		const message = new Message({ name: "John Doe", content: "Hello, world!" })
 		expect(JSON.stringify(message)).toBe('{"name":"John Doe","content":"Hello, world!"}')
 	})
+
+	it("should throw an error if the input is invalid", () => {
+		// @ts-expect-error - This is intentional
+		expect(() => new Message({ name: "John Doe", content: 123 })).toThrow(
+			"Invalid Input - Expected string, received number",
+		)
+	})
 })

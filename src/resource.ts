@@ -3,8 +3,8 @@ import { v4 as uuid } from "uuid"
 
 import { Metadata, Weak } from "./helpers"
 
-interface ResourceMetadata<This extends Resource> {
-	onUpdate: Weak.EventBus<This>
+interface ResourceMetadata {
+	onUpdate: Weak.EventBus<Resource>
 	uniqueId: string
 }
 
@@ -13,14 +13,14 @@ interface StaticResourceMetadata {
 	storage: Weak.ValueMap<string, Resource>
 }
 
-let RESOURCE_UPDATING: ResourceMetadata<any> | undefined
+let RESOURCE_UPDATING: ResourceMetadata | undefined
 
 export class Resource {
 	constructor(..._params: any[]) {
 		// Do absolutely nothing
 	}
 
-	[Metadata.key]: ResourceMetadata<this> = {
+	[Metadata.key]: ResourceMetadata = {
 		onUpdate: new Weak.EventBus(),
 		uniqueId: uuid(),
 	}

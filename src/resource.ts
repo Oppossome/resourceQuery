@@ -2,8 +2,6 @@ import { z } from "zod"
 import { v4 as uuid } from "uuid"
 import { Metadata, Weak } from "./helpers"
 
-let CURRENT_METADATA: ResourceMetadata | undefined
-
 interface ResourceMetadata {
 	uniqueId: string
 }
@@ -12,6 +10,8 @@ interface StaticResourceMetadata {
 	schema: z.ZodRawShape
 	storage: Weak.ValueMap<string, Resource>
 }
+
+let RESOURCE_UPDATING: ResourceMetadata | undefined
 
 export class Resource {
 	constructor(..._params: any[]) {
@@ -51,8 +51,8 @@ export class Resource {
 				}
 
 				// Temporarily store the current metadata and set the new metadata for the duration of the constructor
-				const lastMetadata = CURRENT_METADATA
-				const currentMetadata = (CURRENT_METADATA = Metadata.get(this))
+				const lastMetadata = RESOURCE_UPDATING
+				const currentMetadata = (RESOURCE_UPDATING = Metadata.get(this))
 
 				// Write the parsed input to a temporary object until we know where to put it
 				const parsedInput = {} as z.output<Object>
@@ -61,18 +61,18 @@ export class Resource {
 
 					// If the input is invalid, restore the last metadata and throw an error
 					if (!parsedValue.success) {
-						CURRENT_METADATA = lastMetadata
+						RESOURCE_UPDATING = lastMetadata
 						throw new Error("Invalid Input - " + parsedValue.error.errors[0].message)
 					}
 
 					parsedInput[schemaKey] = parsedValue.data
 				}
 
-				CURRENT_METADATA = lastMetadata
+				RESOURCE_UPDATING = lastMetadata
 
 				// Assign the parsed input to the correct object, and store it in the storage map if necessary
 				const targetObject = newMetadata.storage.get(currentMetadata.uniqueId) ?? this
-				if (targetObject !== this) newMetadata.storage.set(currentMetadata.uniqueId, targetObject)
+				if (targetObject === this) newMetadata.storage.set(currentMetadata.uniqueId, targetObject)
 				Object.assign(targetObject, parsedInput)
 
 				// @ts-expect-error - Resolve this at some point
@@ -87,41 +87,64 @@ export class Resource {
 	}
 }
 
-class Test extends Resource.extend({
-	id: z.string(),
-}) {
-	test() {
-		this.id
-	}
+/**
+ * Returns a schema that assigns the parsed output to the current {@link RESOURCE_UPDATING}.
+ * @template {z.ZodTypeAny} Schema
+ * @param {Schema | undefined} schemaOf
+ * The schema to parse the input of, defaults to {@link z.string}.
+ */
+export function uniqueId<Schema extends z.ZodTypeAny>(schemaOf?: Schema) {
+	return z.unknown().transform((input, ctx) => {
+		if (!RESOURCE_UPDATING) {
+			ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Unexpected resourceUniqueId call" })
+			return z.NEVER
+		}
+
+		// Parse the input of our schema
+		const parseSchema = schemaOf ?? z.string()
+		const parseResult = parseSchema.parse(input)
+
+		// Assign the current resource's id to the parsed input's data
+		RESOURCE_UPDATING.uniqueId = parseResult
+		return parseResult as z.infer<Schema>
+	})
 }
 
-class Extension extends Test.extend({
-	name: z.string(),
-}) {
-	override test() {
-		this.id
-		this.name
-	}
-}
+// class Test extends Resource.extend({
+// 	id: z.string(),
+// }) {
+// 	test() {
+// 		this.id
+// 	}
+// }
 
-class Extension2 extends Extension.extend({
-	name2: z.number().pipe(z.coerce.string()),
-}) {
-	override test() {
-		this.id
-		this.name
-		this.name2
-	}
-}
+// class Extension extends Test.extend({
+// 	name: z.string(),
+// }) {
+// 	override test() {
+// 		this.id
+// 		this.name
+// 	}
+// }
 
-new Extension2({
-	id: "test",
-	name: "test",
-	name2: 123,
-})
+// class Extension2 extends Extension.extend({
+// 	name2: z.number().pipe(z.coerce.string()),
+// }) {
+// 	override test() {
+// 		this.id
+// 		this.name
+// 		this.name2
+// 	}
+// }
 
-type Test2 = Metadata.Get<typeof Extension>["schema"]
-//   ^?
+// new Extension2({
+// 	id: "test",
+// 	name: "test",
+// 	name2: 123,
+// })
 
-type T = z.infer<z.ZodObject<Metadata.Get<typeof Extension>["schema"]>>
-//   ^?
+// type Test2 = Metadata.Get<typeof Extension>["schema"]
+// //   ^?
+
+// type T = z.infer<z.ZodObject<Metadata.Get<typeof Extension>["schema"]>>
+// //   ^?

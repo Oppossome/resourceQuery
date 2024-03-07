@@ -62,11 +62,10 @@ export class Resource {
 				for (const schemaKey in schema) {
 					const parsedValue = schema[schemaKey].safeParse(input[schemaKey])
 
-					// If the input is invalid, restore the last metadata and throw an error
+					// If the input is invalid, restore the last metadata and throw the error
 					if (!parsedValue.success) {
 						RESOURCE_UPDATING = lastMetadata
-						const error = parsedValue.error.errors.at(0)?.message ?? "Unknown Error"
-						throw new Error(`Invalid Input - ${error}`)
+						throw parsedValue.error
 					}
 
 					parsedInput[schemaKey] = parsedValue.data

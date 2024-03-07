@@ -5,7 +5,7 @@ import { Resource, uniqueId } from "./resource"
 
 describe("Resource", () => {
 	class User extends Resource.extend({
-		name: uniqueId(z.string()),
+		name: uniqueId(),
 	}) {}
 
 	class Message extends User.extend({

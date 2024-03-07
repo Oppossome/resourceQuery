@@ -93,11 +93,11 @@ export class Resource {
 
 /**
  * Returns a schema that assigns the parsed output to the current {@link RESOURCE_UPDATING}.
- * @template {z.ZodSchema<string>} Schema
+ * @template {z.ZodSchema<string, any, any>} Schema
  * @param {Schema | undefined} schemaOf
  * The schema to parse the input of, defaults to {@link z.string}.
  */
-export function uniqueId<Schema extends z.ZodSchema<string>>(schemaOf?: Schema) {
+export function uniqueId<Schema extends z.ZodSchema<string, any, any>>(schemaOf?: Schema) {
 	return z.unknown().transform((input, ctx) => {
 		if (!RESOURCE_UPDATING) {
 			ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Unexpected uniqueId call" })
@@ -111,5 +111,5 @@ export function uniqueId<Schema extends z.ZodSchema<string>>(schemaOf?: Schema) 
 		// Assign the current resource's id to the parsed input's data
 		RESOURCE_UPDATING.uniqueId = parseResult
 		return parseResult as string
-	})
+	}) as unknown as Schema
 }

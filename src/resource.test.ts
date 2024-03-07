@@ -1,5 +1,6 @@
 import { z } from "zod"
 import { it, expect, describe } from "vitest"
+
 import { Resource, uniqueId } from "./resource"
 
 describe("Resource", () => {

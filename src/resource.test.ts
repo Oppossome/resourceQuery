@@ -1,7 +1,18 @@
 import { z } from "zod"
-import { it, expect, describe } from "vitest"
+import { vi, it, expect, describe, beforeEach, afterEach } from "vitest"
 
 import { Resource, uniqueId } from "./resource"
+import { Metadata } from "./helpers"
+import { EventBus } from "./helpers/weak"
+
+function spyOnEvent<V>(input: EventBus<V>) {
+	const spy = vi.fn()
+	input.subscribe((input) => {
+		console.log(input)
+		spy(input)
+	})
+	return spy
+}
 
 describe("Resource", () => {
 	class User extends Resource.resourceExtend({
@@ -15,6 +26,14 @@ describe("Resource", () => {
 			return `${this.name}: ${this.content}`
 		}
 	}
+
+	beforeEach(() => {
+		vi.useFakeTimers()
+	})
+
+	afterEach(() => {
+		vi.restoreAllMocks()
+	})
 
 	it("should be possible to extend a resource", () => {
 		const message = new Message({ name: "John Doe", content: "Hello, world!" })
@@ -40,7 +59,34 @@ describe("Resource", () => {
 		expect(() => new Message({ name: "John Doe", content: 123 })).toThrow()
 	})
 
-	it("classes should only have access to their own values", () => {
-		new Message({ name: "John Doe", content: "Hello, world!" })
+	it("A resource should fire instance events", () => {
+		const message = new Message({ name: "John Doe", content: "Hello, world!" })
+		new Message({ name: "Jane Doe", content: "Hello, world!" }) // This should not fire an event
+
+		const updateSpy = spyOnEvent(Metadata.get(message).onUpdate)
+
+		vi.advanceTimersByTime(150)
+		expect(updateSpy).toHaveBeenCalledTimes(1)
+		expect(updateSpy).toHaveBeenCalledWith(message)
+
+		message.content = "Hello, foo!"
+		message.content = "Hello, foo 2!"
+		vi.advanceTimersByTime(150)
+		expect(updateSpy).toHaveBeenCalledTimes(2)
+		expect(updateSpy).toHaveBeenCalledWith(message)
+	})
+
+	it("A resource should forward its events to the static events", () => {
+		const message = new Message({ name: "John Doe", content: "Hello, world!" })
+		const updateSpy = spyOnEvent(Metadata.get(Message).onUpdate)
+
+		vi.advanceTimersByTime(150)
+		expect(updateSpy).toHaveBeenCalledTimes(1)
+		expect(updateSpy).toHaveBeenCalledWith(message)
+
+		message.content = "Hello, foo!"
+		vi.advanceTimersByTime(150)
+		expect(updateSpy).toHaveBeenCalledTimes(2)
+		expect(updateSpy).toHaveBeenCalledWith(message)
 	})
 })

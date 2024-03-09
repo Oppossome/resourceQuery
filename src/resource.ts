@@ -10,6 +10,7 @@ import { Metadata, Weak } from "./helpers"
 let UPDATING_METADATA: ResourceMetadata | undefined
 
 interface ResourceMetadata {
+	fields: Record<string, unknown>
 	uniqueId: string
 	onUpdate: Weak.EventBus<Resource>
 }
@@ -26,8 +27,16 @@ export class Resource {
 	}
 
 	[Metadata.key]: ResourceMetadata = {
+		fields: {},
 		uniqueId: uuid(),
 		onUpdate: new Weak.EventBus(100),
+	}
+
+	/**
+	 * Because we want to listen for assignment, we need to override the toJSON method.
+	 */
+	toJSON() {
+		return {}
 	}
 
 	// === Static Methods ===
@@ -52,7 +61,7 @@ export class Resource {
 		type Object = z.ZodObject<(typeof newMetadata)["schema"]>
 
 		// @ts-expect-error - Typescript considers this to be a mixin but we're abusing it
-		return class extends this {
+		class Extension extends this {
 			constructor(input: z.input<Object>) {
 				super(input)
 
@@ -78,23 +87,52 @@ export class Resource {
 					parsedInput[schemaKey] = parsedValue.data
 				}
 
+				// Now that we know the resourceId, see if it's cached already and assign the extracted data accordingly
+				const targetObject = newMetadata.storage.get(currentMetadata.uniqueId)
 				UPDATING_METADATA = lastMetadata
 
-				// Now that we know the resourceId, see if it's cached already and assign the extracted data accordingly
-				const targetObject = newMetadata.storage.get(currentMetadata.uniqueId) ?? this
-				Object.assign(targetObject, parsedInput)
-
 				// Only if it's the original object
-				if (targetObject === this) {
-					newMetadata.storage.set(currentMetadata.uniqueId, targetObject)
+				if (!targetObject) {
+					newMetadata.storage.set(currentMetadata.uniqueId, this)
 					this[Metadata.key].onUpdate.subscribe((value) => newMetadata.onUpdate.dispatch(value)) // Forward
 				}
 
-				return targetObject
+				// Assign the parsed input to whichever object we're working with
+				const outputObject = targetObject ?? this
+				// @ts-expect-error - It's alright, we're assigning known keys
+				for (const key in parsedInput) outputObject[key] = parsedInput[key]
+				return outputObject
+			}
+
+			/**
+			 * Returns the JSON representation of the resource.
+			 *  - Because we want to listen for assignment, we need to override the toJSON method.
+			 */
+			toJSON() {
+				const output: Record<string, unknown> = super.toJSON()
+				// @ts-expect-error - It's alright, we're assigning known keys
+				for (const key in schema) output[key] = this[key]
+				return output
 			}
 
 			static [Metadata.key] = newMetadata
-		} as Omit<This, "new"> & {
+		}
+
+		// Assign getters and setters for each field in the schema.
+		for (const key in schema) {
+			Object.defineProperty(Extension.prototype, key, {
+				get() {
+					return this[Metadata.key].fields[key]
+				},
+				set(value) {
+					this[Metadata.key].fields[key] = value
+					this[Metadata.key].onUpdate.dispatch(this)
+				},
+			})
+		}
+
+		// Inject the new properties into the class
+		return Extension as Omit<typeof Extension, "new"> & {
 			new (input: z.input<Object>): This["prototype"] & z.output<Object>
 			[Metadata.key]: typeof newMetadata
 		}

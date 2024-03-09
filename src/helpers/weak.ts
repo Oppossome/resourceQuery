@@ -37,7 +37,7 @@ export class ValueMap<K, V extends object> {
 
 /**
  * An event emitter that holds weak references to its subscribers.
- * @template V The type of the value that will be dispatched.
+ * @template T The type of the value that will be dispatched.
  *
  * @example
  * const event = new WeakEvent<number>()
@@ -50,22 +50,22 @@ export class ValueMap<K, V extends object> {
  *  }
  * }
  */
-export class EventBus<V> {
-	#set = new Set<WeakRef<EventListener<V>>>()
+export class EventBus<T> {
+	#set = new Set<WeakRef<EventListener<T>>>()
 	#debounce: ReturnType<typeof debounce>
 
 	constructor(ms: number = 0) {
 		this.#debounce = debounce(ms)
 	}
 
-	subscribe(listener: EventListener<V>) {
+	subscribe(listener: EventListener<T>) {
 		const storage = new WeakRef(listener)
 		this.#set.add(storage)
 
 		return () => this.#set.delete(storage)
 	}
 
-	dispatch(value: V) {
+	dispatch(value: T) {
 		this.#debounce(() => {
 			for (const listener of this.#set) {
 				listener.deref()?.(value)

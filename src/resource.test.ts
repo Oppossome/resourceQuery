@@ -60,7 +60,7 @@ describe("Resource", () => {
 		expect(() => new Message({ name: "John Doe", message: 123 })).toThrow()
 	})
 
-	it("A resource should fire instance events", () => {
+	it("should fire instance events", () => {
 		const message = new Message({ name: "John Doe", message: "Hello, world!" })
 		new Message({ name: "Jane Doe", message: "Hello, world!" }) // This should not fire an event
 
@@ -71,13 +71,13 @@ describe("Resource", () => {
 		expect(updateSpy).toHaveBeenCalledWith(message)
 
 		message.message = "Hello, foo!"
-		message.message = "Hello, foo 2!"
+		message.message = "Hello, foo 2!" // Should debounce
 		vi.advanceTimersByTime(150)
 		expect(updateSpy).toHaveBeenCalledTimes(2)
 		expect(updateSpy).toHaveBeenCalledWith(message)
 	})
 
-	it("A resource should forward its events to the static events", () => {
+	it("should forward its events to the static events", () => {
 		const message = new Message({ name: "John Doe", message: "Hello, world!" })
 		const updateSpy = spyOnEvent(Metadata.get(Message).onUpdate)
 

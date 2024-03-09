@@ -9,6 +9,26 @@ import { Metadata, Weak } from "./helpers"
  */
 let UPDATING_METADATA: ResourceMetadata | undefined
 
+/**
+ * Sets the current {@link UPDATING_METADATA} to the given metadata and calls the callback.
+ * @param {ResourceMetadata} resource The resource metadata to set.
+ */
+function updateMetadata(resource: Resource, callback: () => void): ResourceMetadata {
+	const lastMetadata = UPDATING_METADATA
+	const currentMetadata = (UPDATING_METADATA = Metadata.get(resource))
+
+	try {
+		callback()
+	} catch (error) {
+		// If an error occurs, we want to reset the metadata to the last one.
+		UPDATING_METADATA = lastMetadata
+		throw error
+	}
+
+	UPDATING_METADATA = lastMetadata
+	return currentMetadata
+}
+
 interface ResourceMetadata {
 	fields: Record<string, unknown>
 	uniqueId: string
@@ -69,39 +89,25 @@ export class Resource {
 					throw new Error("Invalid Input - Expected an object but got something else")
 				}
 
-				// Temporarily store the current metadata and set the new metadata for the duration of the constructor
-				const lastMetadata = UPDATING_METADATA
-				const currentMetadata = (UPDATING_METADATA = Metadata.get(this))
-
-				// Write the parsed input to a temporary object until we know where to put it
+				// Parse the input to an intermediate object until we know the resourceId
 				const parsedInput = {} as z.output<Object>
-				for (const schemaKey in schema) {
-					const parsedValue = schema[schemaKey].safeParse(input[schemaKey])
-
-					// If the input is invalid, restore the last metadata and throw the error
-					if (!parsedValue.success) {
-						UPDATING_METADATA = lastMetadata
-						throw parsedValue.error
+				const metadata = updateMetadata(this, () => {
+					for (const schemaKey in schema) {
+						const parsedValue = schema[schemaKey].parse(input[schemaKey])
+						parsedInput[schemaKey] = parsedValue
 					}
+				})
 
-					parsedInput[schemaKey] = parsedValue.data
-				}
+				const cachedObject = newMetadata.storage.get(metadata.uniqueId)
+				const outputObject = cachedObject ?? this
 
-				// Now that we know the resourceId, see if it's cached already and assign the extracted data accordingly
-				const targetObject = newMetadata.storage.get(currentMetadata.uniqueId)
-				UPDATING_METADATA = lastMetadata
-
-				// Only if it's the original object
-				if (!targetObject) {
-					newMetadata.storage.set(currentMetadata.uniqueId, this)
-					this[Metadata.key].onUpdate.subscribe((value) => newMetadata.onUpdate.dispatch(value)) // Forward
-				}
-
-				// Assign the parsed input to whichever object we're working with
-				const outputObject = targetObject ?? this
 				// @ts-expect-error - It's alright, we're assigning known keys
 				for (const key in parsedInput) outputObject[key] = parsedInput[key]
-				return outputObject
+				if (cachedObject) return cachedObject
+
+				// Do some one-time things for unique objects
+				newMetadata.storage.set(metadata.uniqueId, this)
+				this[Metadata.key].onUpdate.subscribe((value) => newMetadata.onUpdate.dispatch(value)) // Forward
 			}
 
 			/**

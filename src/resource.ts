@@ -110,10 +110,7 @@ export class Resource {
 				this[Metadata.key].onUpdate.subscribe(newMetadata.onUpdate.dispatch) // Forward
 			}
 
-			/**
-			 * Returns the JSON representation of the resource.
-			 *  - Because we want to listen for assignment, we need to override the toJSON method.
-			 */
+			// Because our properties are getters and setters, we need to override the toJSON method to include them.
 			toJSON() {
 				const metadataObject = Metadata.get(this)
 				const output: Record<string, unknown> = super.toJSON()
@@ -124,7 +121,15 @@ export class Resource {
 			static [Metadata.key] = newMetadata
 		}
 
-		// Assign getters and setters for each field in the schema.
+		/**
+		 * Assign getters and setters for each field in the schema.
+		 * Upsides:
+		 * - This is done to allow us to listen for changes to the fields.
+		 *
+		 * Downsides:
+		 * - Has the side effect of making the fields non-enumerable.
+		 * - Requires us to override the toJSON method to include the fields.
+		 */
 		for (const key in schema) {
 			Object.defineProperty(Extension.prototype, key, {
 				get() {

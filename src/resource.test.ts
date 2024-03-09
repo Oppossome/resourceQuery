@@ -4,11 +4,11 @@ import { it, expect, describe } from "vitest"
 import { Resource, uniqueId } from "./resource"
 
 describe("Resource", () => {
-	class User extends Resource.extend({
+	class User extends Resource.resourceExtend({
 		name: uniqueId(),
 	}) {}
 
-	class Message extends User.extend({
+	class Message extends User.resourceExtend({
 		content: z.string(),
 	}) {
 		get message() {
@@ -38,5 +38,9 @@ describe("Resource", () => {
 	it("should throw an error if the input is invalid", () => {
 		// @ts-expect-error - This is intentional
 		expect(() => new Message({ name: "John Doe", content: 123 })).toThrow()
+	})
+
+	it("classes should only have access to their own values", () => {
+		new Message({ name: "John Doe", content: "Hello, world!" })
 	})
 })

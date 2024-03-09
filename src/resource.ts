@@ -13,7 +13,7 @@ interface StaticResourceMetadata {
 	storage: Weak.ValueMap<string, Resource>
 }
 
-let RESOURCE_UPDATING: ResourceMetadata | undefined
+let UPDATING_METADATA: ResourceMetadata | undefined
 
 export class Resource {
 	constructor(..._params: any[]) {
@@ -54,8 +54,8 @@ export class Resource {
 				}
 
 				// Temporarily store the current metadata and set the new metadata for the duration of the constructor
-				const lastMetadata = RESOURCE_UPDATING
-				const currentMetadata = (RESOURCE_UPDATING = Metadata.get(this))
+				const lastMetadata = UPDATING_METADATA
+				const currentMetadata = (UPDATING_METADATA = Metadata.get(this))
 
 				// Write the parsed input to a temporary object until we know where to put it
 				const parsedInput = {} as z.output<Object>
@@ -64,14 +64,14 @@ export class Resource {
 
 					// If the input is invalid, restore the last metadata and throw the error
 					if (!parsedValue.success) {
-						RESOURCE_UPDATING = lastMetadata
+						UPDATING_METADATA = lastMetadata
 						throw parsedValue.error
 					}
 
 					parsedInput[schemaKey] = parsedValue.data
 				}
 
-				RESOURCE_UPDATING = lastMetadata
+				UPDATING_METADATA = lastMetadata
 
 				// Assign the parsed input to the correct object, and store it in the storage map if necessary
 				const targetObject = newMetadata.storage.get(currentMetadata.uniqueId) ?? this
@@ -91,14 +91,14 @@ export class Resource {
 }
 
 /**
- * Returns a schema that assigns the parsed output to the current {@link RESOURCE_UPDATING}.
+ * Returns a schema that assigns the parsed output to the current {@link UPDATING_METADATA}.
  * @template {z.ZodSchema<string, any, any>} Schema
  * @param {Schema | undefined} schemaOf
  * The schema to parse the input of, defaults to {@link z.string}.
  */
 export function uniqueId<Schema extends z.ZodSchema<string, any, any>>(schemaOf?: Schema) {
 	return z.unknown().transform((input, ctx) => {
-		if (!RESOURCE_UPDATING) {
+		if (!UPDATING_METADATA) {
 			ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Unexpected uniqueId call" })
 			return z.NEVER
 		}
@@ -108,7 +108,7 @@ export function uniqueId<Schema extends z.ZodSchema<string, any, any>>(schemaOf?
 		const parseResult = parseSchema.parse(input)
 
 		// Assign the current resource's id to the parsed input's data
-		RESOURCE_UPDATING.uniqueId = parseResult
+		UPDATING_METADATA.uniqueId = parseResult
 		return parseResult as string
 	}) as unknown as Schema
 }

@@ -105,7 +105,7 @@ export class Resource {
 				for (const key in parsedInput) outputObject[key] = parsedInput[key]
 				if (cachedObject) return cachedObject
 
-				// Do some one-time things for unique objects
+				// Do some one-time things for uncached objects
 				newMetadata.storage.set(metadata.uniqueId, this)
 				this[Metadata.key].onUpdate.subscribe(newMetadata.onUpdate.dispatch) // Forward
 			}

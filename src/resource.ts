@@ -115,9 +115,9 @@ export class Resource {
 			 *  - Because we want to listen for assignment, we need to override the toJSON method.
 			 */
 			toJSON() {
+				const metadataObject = Metadata.get(this)
 				const output: Record<string, unknown> = super.toJSON()
-				// @ts-expect-error - It's alright, we're assigning known keys
-				for (const key in schema) output[key] = this[key]
+				for (const key in schema) output[key] = metadataObject.fields[key]
 				return output
 			}
 

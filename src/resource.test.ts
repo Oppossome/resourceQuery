@@ -20,10 +20,14 @@ describe("Resource", () => {
 	}) {}
 
 	class Message extends User.resourceExtend({
-		content: z.string(),
+		message: z.string(),
 	}) {
-		get message() {
-			return `${this.name}: ${this.content}`
+		override get message() {
+			return `${this.name}: ${super.message}`
+		}
+
+		override set message(value: string) {
+			super.message = value
 		}
 	}
 
@@ -36,32 +40,32 @@ describe("Resource", () => {
 	})
 
 	it("should be possible to extend a resource", () => {
-		const message = new Message({ name: "John Doe", content: "Hello, world!" })
+		const message = new Message({ name: "John Doe", message: "Hello, world!" })
 		expect(message.message).toBe("John Doe: Hello, world!")
 	})
 
 	it("should return an existing resource if the uniqueId is the same", () => {
-		const firstMessage = new Message({ name: "John Doe", content: "Hello, world!" })
+		const firstMessage = new Message({ name: "John Doe", message: "Hello, world!" })
 		expect(firstMessage.message).toBe("John Doe: Hello, world!")
 
-		const secondMessage = new Message({ name: "John Doe", content: "Hello, foo!" })
+		const secondMessage = new Message({ name: "John Doe", message: "Hello, foo!" })
 		expect(firstMessage.message).toBe("John Doe: Hello, foo!")
 		expect(firstMessage).toBe(secondMessage)
 	})
 
 	it("should stringify without exposing any internal properties", () => {
-		const message = new Message({ name: "John Doe", content: "Hello, world!" })
-		expect(JSON.stringify(message)).toBe('{"name":"John Doe","content":"Hello, world!"}')
+		const message = new Message({ name: "John Doe", message: "Hello, world!" })
+		expect(JSON.stringify(message)).toBe('{"name":"John Doe","message":"Hello, world!"}')
 	})
 
 	it("should throw an error if the input is invalid", () => {
 		// @ts-expect-error - This is intentional
-		expect(() => new Message({ name: "John Doe", content: 123 })).toThrow()
+		expect(() => new Message({ name: "John Doe", message: 123 })).toThrow()
 	})
 
 	it("A resource should fire instance events", () => {
-		const message = new Message({ name: "John Doe", content: "Hello, world!" })
-		new Message({ name: "Jane Doe", content: "Hello, world!" }) // This should not fire an event
+		const message = new Message({ name: "John Doe", message: "Hello, world!" })
+		new Message({ name: "Jane Doe", message: "Hello, world!" }) // This should not fire an event
 
 		const updateSpy = spyOnEvent(Metadata.get(message).onUpdate)
 
@@ -69,22 +73,22 @@ describe("Resource", () => {
 		expect(updateSpy).toHaveBeenCalledTimes(1)
 		expect(updateSpy).toHaveBeenCalledWith(message)
 
-		message.content = "Hello, foo!"
-		message.content = "Hello, foo 2!"
+		message.message = "Hello, foo!"
+		message.message = "Hello, foo 2!"
 		vi.advanceTimersByTime(150)
 		expect(updateSpy).toHaveBeenCalledTimes(2)
 		expect(updateSpy).toHaveBeenCalledWith(message)
 	})
 
 	it("A resource should forward its events to the static events", () => {
-		const message = new Message({ name: "John Doe", content: "Hello, world!" })
+		const message = new Message({ name: "John Doe", message: "Hello, world!" })
 		const updateSpy = spyOnEvent(Metadata.get(Message).onUpdate)
 
 		vi.advanceTimersByTime(150)
 		expect(updateSpy).toHaveBeenCalledTimes(1)
 		expect(updateSpy).toHaveBeenCalledWith(message)
 
-		message.content = "Hello, foo!"
+		message.message = "Hello, foo!"
 		vi.advanceTimersByTime(150)
 		expect(updateSpy).toHaveBeenCalledTimes(2)
 		expect(updateSpy).toHaveBeenCalledWith(message)

@@ -3,17 +3,22 @@ import { v4 as uuid } from "uuid"
 
 import { Metadata, Weak } from "./helpers"
 
+/**
+ * The current {@link ResourceMetadata} that is being updated.
+ * This is used to assign the uniqueId of the current resource.
+ */
+let UPDATING_METADATA: ResourceMetadata | undefined
+
 interface ResourceMetadata {
-	onUpdate: Weak.EventBus<Resource>
 	uniqueId: string
+	onUpdate: Weak.EventBus<Resource>
 }
 
 interface StaticResourceMetadata {
 	schema: z.ZodRawShape
 	storage: Weak.ValueMap<string, Resource>
+	onUpdate: Weak.EventBus<Resource>
 }
-
-let UPDATING_METADATA: ResourceMetadata | undefined
 
 export class Resource {
 	constructor(..._params: any[]) {
@@ -21,8 +26,8 @@ export class Resource {
 	}
 
 	[Metadata.key]: ResourceMetadata = {
-		onUpdate: new Weak.EventBus(),
 		uniqueId: uuid(),
+		onUpdate: new Weak.EventBus(100),
 	}
 
 	// === Static Methods ===
@@ -30,6 +35,7 @@ export class Resource {
 	static [Metadata.key] = {
 		schema: {},
 		storage: new Weak.ValueMap(),
+		onUpdate: new Weak.EventBus(),
 	} satisfies StaticResourceMetadata
 
 	static extend<This extends typeof Resource, Schema extends z.ZodRawShape>(
@@ -39,8 +45,9 @@ export class Resource {
 		const newMetadata = {
 			// For some reason, this is the only way to get the type to work correctly :/
 			schema: { ...Metadata.get(this).schema, ...schema } as Metadata.Get<This>["schema"] & Schema,
-			storage: new Weak.ValueMap<string, object>(),
-		}
+			storage: new Weak.ValueMap<string, Resource>(),
+			onUpdate: new Weak.EventBus(),
+		} satisfies StaticResourceMetadata
 
 		type Object = z.ZodObject<(typeof newMetadata)["schema"]>
 
@@ -73,12 +80,16 @@ export class Resource {
 
 				UPDATING_METADATA = lastMetadata
 
-				// Assign the parsed input to the correct object, and store it in the storage map if necessary
+				// Now that we know the resourceId, see if it's cached already and assign the extracted data accordingly
 				const targetObject = newMetadata.storage.get(currentMetadata.uniqueId) ?? this
-				if (targetObject === this) newMetadata.storage.set(currentMetadata.uniqueId, targetObject)
 				Object.assign(targetObject, parsedInput)
 
-				// @ts-expect-error - Resolve this at some point
+				// Only if it's the original object
+				if (targetObject === this) {
+					newMetadata.storage.set(currentMetadata.uniqueId, targetObject)
+					this[Metadata.key].onUpdate.subscribe((value) => newMetadata.onUpdate.dispatch(value)) // Forward
+				}
+
 				return targetObject
 			}
 

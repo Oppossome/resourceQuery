@@ -52,6 +52,11 @@ export class ValueMap<K, V extends object> {
  */
 export class EventBus<V> {
 	#set = new Set<WeakRef<EventListener<V>>>()
+	#debounce: ReturnType<typeof debounce>
+
+	constructor(ms: number = 0) {
+		this.#debounce = debounce(ms)
+	}
 
 	subscribe(listener: EventListener<V>) {
 		const storage = new WeakRef(listener)
@@ -61,9 +66,24 @@ export class EventBus<V> {
 	}
 
 	dispatch(value: V) {
-		for (const listener of this.#set) {
-			listener.deref()?.(value)
-		}
+		this.#debounce(() => {
+			for (const listener of this.#set) {
+				listener.deref()?.(value)
+			}
+		})
+	}
+}
+
+/**
+ * Function that debounces a function call.
+ * @param ms The amount of milliseconds to wait before calling the function.
+ */
+function debounce(ms: number) {
+	let timeoutId: number | undefined
+	return (input: () => void) => {
+		if (ms === 0) return input() // No debounce
+		if (timeoutId) clearTimeout(timeoutId)
+		timeoutId = setTimeout(input, ms)
 	}
 }
 

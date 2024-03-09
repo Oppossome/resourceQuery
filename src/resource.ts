@@ -38,7 +38,7 @@ export class Resource {
 		onUpdate: new Weak.EventBus(),
 	} satisfies StaticResourceMetadata
 
-	static extend<This extends typeof Resource, Schema extends z.ZodRawShape>(
+	static resourceExtend<This extends typeof Resource, Schema extends z.ZodRawShape>(
 		this: This,
 		schema: Schema,
 	) {

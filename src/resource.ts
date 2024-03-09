@@ -107,7 +107,7 @@ export class Resource {
 
 				// Do some one-time things for unique objects
 				newMetadata.storage.set(metadata.uniqueId, this)
-				this[Metadata.key].onUpdate.subscribe((value) => newMetadata.onUpdate.dispatch(value)) // Forward
+				this[Metadata.key].onUpdate.subscribe(newMetadata.onUpdate.dispatch) // Forward
 			}
 
 			/**

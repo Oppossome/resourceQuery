@@ -56,6 +56,10 @@ export class EventBus<T> {
 
 	constructor(ms: number = 0) {
 		this.#debounce = debounce(ms)
+
+		// Bind methods for convenience
+		this.subscribe = this.subscribe.bind(this)
+		this.dispatch = this.dispatch.bind(this)
 	}
 
 	subscribe(listener: EventListener<T>) {

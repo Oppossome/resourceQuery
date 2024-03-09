@@ -7,10 +7,7 @@ import { EventBus } from "./helpers/weak"
 
 function spyOnEvent<V>(input: EventBus<V>) {
 	const spy = vi.fn()
-	input.subscribe((input) => {
-		console.log(input)
-		spy(input)
-	})
+	input.subscribe(spy)
 	return spy
 }
 

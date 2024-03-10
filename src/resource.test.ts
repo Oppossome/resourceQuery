@@ -2,10 +2,9 @@ import { z } from "zod"
 import { vi, it, expect, describe, beforeEach, afterEach } from "vitest"
 
 import { Resource, uniqueId } from "./resource"
-import { Metadata } from "./helpers"
-import { EventBus } from "./helpers/weak"
+import { Metadata, Util } from "./helpers"
 
-function spyOnEvent<V>(input: EventBus<V>) {
+function spyOnEvent<V>(input: Util.WeakEventBus<V>) {
 	const spy = vi.fn()
 	input.subscribe(spy)
 	return spy

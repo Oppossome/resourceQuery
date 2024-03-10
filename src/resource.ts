@@ -36,7 +36,7 @@ interface ResourceMetadata {
 	fields: Record<string, unknown>
 	uniqueId: string
 	onUpdate: Util.WeakEventBus<Resource>
-	updateManagers: Util.WeakValueMap<StaticResourceMetadata, ResourceUpdateManager[]>
+	updateManagers: ResourceUpdateManager[]
 }
 
 interface StaticResourceMetadata {
@@ -54,11 +54,11 @@ export class Resource {
 		fields: {},
 		uniqueId: uuid(),
 		onUpdate: new Util.WeakEventBus(100),
-		updateManagers: new Util.WeakValueMap(),
+		updateManagers: [],
 	}
 
-	withUpdates(_updateCallback: UpdateCallback) {
-		// Do absolutely nothing
+	withUpdates(updateCallback: UpdateCallback) {
+		Metadata.get(this).updateManagers.push(new ResourceUpdateManager(updateCallback))
 	}
 
 	/**
@@ -136,11 +136,12 @@ export class Resource {
 				const cachedObject = newMetadata.storage.get(metadata.uniqueId)
 				const outputObject = cachedObject ?? this
 
-				// Cancel all the update managers associated with the current object
-				Metadata.get(outputObject).updateManagers.update(newMetadata, (updateMetadata) => {
-					updateMetadata?.forEach((updateManager) => updateManager.cancel())
-					return undefined
-				})
+				// If we have a cached object, we want to cancel its update managers so we don't register duplicate events
+				if (cachedObject && cachedObject !== this) {
+					const currentMetadata = Metadata.get(cachedObject)
+					currentMetadata.updateManagers.forEach((manager) => manager.cancel())
+					currentMetadata.updateManagers = []
+				}
 
 				// @ts-expect-error - It's alright, we're assigning known keys
 				for (const key in parsedInput) outputObject[key] = parsedInput[key]
@@ -149,14 +150,6 @@ export class Resource {
 				// Do some one-time things for uncached objects
 				newMetadata.storage.set(metadata.uniqueId, this)
 				this[Metadata.key].onUpdate.subscribe(newMetadata.onUpdate.dispatch) // Forward
-			}
-
-			override withUpdates(updateCallback: UpdateCallback): void {
-				Metadata.get(this).updateManagers.update(newMetadata, (updateManagers) => {
-					updateManagers ??= [] // Create a new array if it doesn't exist
-					updateManagers.push(new ResourceUpdateManager(updateCallback))
-					return updateManagers
-				})
 			}
 
 			// Because our properties are getters and setters, we need to override the toJSON method to include them.

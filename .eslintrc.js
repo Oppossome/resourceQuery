@@ -14,7 +14,7 @@ module.exports = {
 		"plugin:@typescript-eslint/recommended",
 		"plugin:import/recommended",
 	],
-	plugins: ["@typescript-eslint", "prettier"],
+	plugins: ["@typescript-eslint"],
 	overrides: [
 		{
 			env: { node: true },
@@ -23,13 +23,14 @@ module.exports = {
 		},
 	],
 	rules: {
-		"prettier/prettier": "error",
+		"@typescript-eslint/no-namespace": "off",
 		"@typescript-eslint/no-explicit-any": "off",
 		"@typescript-eslint/ban-types": "off",
 		"import/no-unresolved": "off",
 		"import/order": [
 			"error",
 			{
+				"newlines-between": "always",
 				groups: [["builtin", "external"], "internal", ["parent", "sibling", "index"]],
 			},
 		],

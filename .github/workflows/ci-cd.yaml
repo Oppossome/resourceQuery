@@ -12,7 +12,9 @@ jobs:
           cache-dependency-path: yarn.lock
       - name: Install Dependencies
         run: yarn install --immutable
-      - name: Lint Code
-        run: yarn lint
       - name: Run Tests
         run: yarn test
+      - name: Check Types
+        run: yarn test:types
+      - name: Lint Code
+        run: yarn lint

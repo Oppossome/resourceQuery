@@ -1,7 +1,7 @@
 import { z } from "zod"
 import { vi, it, expect, describe, beforeEach, afterEach } from "vitest"
 
-import { Resource, uniqueId } from "./resource"
+import { Resource, uniqueId, type Input } from "./resource"
 import { Metadata, Util } from "./helpers"
 
 function spyOnEvent<V>(input: Util.WeakEventBus<V>) {
@@ -9,6 +9,14 @@ function spyOnEvent<V>(input: Util.WeakEventBus<V>) {
 	input.subscribe(spy)
 	return spy
 }
+
+beforeEach(() => {
+	vi.useFakeTimers()
+})
+
+afterEach(() => {
+	vi.restoreAllMocks()
+})
 
 describe("Resource", () => {
 	class User extends Resource.resourceExtend({
@@ -26,14 +34,6 @@ describe("Resource", () => {
 			super.message = value
 		}
 	}
-
-	beforeEach(() => {
-		vi.useFakeTimers()
-	})
-
-	afterEach(() => {
-		vi.restoreAllMocks()
-	})
 
 	it("should be possible to extend a resource", () => {
 		const message = new Message({ name: "John Doe", message: "Hello, world!" })
@@ -91,5 +91,62 @@ describe("Resource", () => {
 		vi.advanceTimersByTime(150)
 		expect(updateSpy).toHaveBeenCalledTimes(2)
 		expect(updateSpy).toHaveBeenCalledWith(message)
+	})
+})
+
+describe("Resource.withUpdates", () => {
+	class Message extends Resource.resourceExtend({
+		userId: z.string(),
+		message: z.string(),
+	}) {
+		//
+	}
+
+	class Roles extends Resource.resourceExtend({
+		userId: uniqueId(),
+		role: z.string(),
+	}) {}
+
+	class User extends Resource.resourceExtend({
+		id: uniqueId(),
+		role: z.optional(Roles.resourceSchema()),
+		messages: z.array(Message.resourceSchema()),
+	}) {
+		constructor(input: Input<typeof User>) {
+			super(input)
+
+			this.withUpdates((method) => {
+				this.role = method.queryOne(Roles, (role) => role.userId === this.id)
+			})
+
+			this.withUpdates((methods) => {
+				this.messages = methods.queryMany(
+					Message,
+					(message) => message.userId === this.id,
+					this.messages,
+				)
+			})
+		}
+	}
+
+	it("should keep the user's list of messages up to date", () => {
+		const user = new User({ id: "123", messages: [] })
+		const message = new Message({ userId: "123", message: "Hello, world!" })
+
+		vi.advanceTimersByTime(250)
+		expect(user.messages).toEqual([message])
+
+		const message2 = new Message({ userId: "123", message: "Hello, world!" })
+
+		vi.advanceTimersByTime(250)
+		expect(user.messages).toEqual([message, message2])
+	})
+
+	it("should keep the user's role up to date", () => {
+		const user = new User({ id: "123", messages: [] })
+		const role = new Roles({ userId: "123", role: "admin" })
+
+		vi.advanceTimersByTime(250)
+		expect(user.role).toBe(role)
 	})
 })

@@ -18,7 +18,16 @@ export function debounce(ms: number) {
  */
 export class WeakValueMap<K, V extends object> {
 	// The map that holds the weak references.
-	#map = new Map<K, WeakRef<V>>()
+	#map = new Map<K, WeakRef<V>>();
+
+	*[Symbol.iterator](): IterableIterator<[K, V]> {
+		for (const [key, value] of this.#map) {
+			const storedValue = value.deref()
+			if (storedValue !== undefined) {
+				yield [key, storedValue]
+			}
+		}
+	}
 
 	clear() {
 		this.#map.clear()
@@ -28,11 +37,35 @@ export class WeakValueMap<K, V extends object> {
 		return this.#map.delete(key)
 	}
 
+	filter(callback: (value: V, key: K) => boolean): V[] {
+		const values = new Array<V>()
+		for (const [key, value] of this) {
+			if (callback(value, key)) {
+				values.push(value)
+			}
+		}
+
+		return values
+	}
+
+	find(callback: (value: V, key: K) => boolean): V | undefined {
+		for (const [key, value] of this) {
+			if (callback(value, key)) {
+				return value
+			}
+		}
+	}
+
+	update(key: K, callback: (value: V | undefined) => V | undefined) {
+		const newValue = callback(this.get(key))
+		if (newValue === undefined) this.delete(key)
+		else this.set(key, newValue)
+	}
+
 	forEach(callback: (value: V, key: K) => void) {
-		this.#map.forEach((value, key) => {
-			const storedValue = value.deref()
-			if (storedValue !== undefined) callback(storedValue, key)
-		})
+		for (const [key, value] of this) {
+			callback(value, key)
+		}
 	}
 
 	get(key: K) {

@@ -2,12 +2,15 @@ import { z } from "zod"
 import { v4 as uuid } from "uuid"
 
 import { Metadata, Util } from "./helpers"
+import { ResourceUpdateManager, UpdateCallback } from "./resourceUpdateManager"
 
 /**
  * The current {@link ResourceMetadata} that is being updated.
  * This is used to assign the uniqueId of the current resource.
  */
 let UPDATING_METADATA: ResourceMetadata | undefined
+
+export type Input<This extends typeof Resource> = z.input<z.ZodObject<Metadata.Get<This>["schema"]>>
 
 /**
  * Sets the current {@link UPDATING_METADATA} to the given metadata and calls the callback.
@@ -33,7 +36,7 @@ interface ResourceMetadata {
 	fields: Record<string, unknown>
 	uniqueId: string
 	onUpdate: Util.WeakEventBus<Resource>
-	updateCleanup: (() => void)[]
+	updateManagers: Util.WeakValueMap<StaticResourceMetadata, ResourceUpdateManager[]>
 }
 
 interface StaticResourceMetadata {
@@ -51,7 +54,11 @@ export class Resource {
 		fields: {},
 		uniqueId: uuid(),
 		onUpdate: new Util.WeakEventBus(100),
-		updateCleanup: [],
+		updateManagers: new Util.WeakValueMap(),
+	}
+
+	withUpdates(_updateCallback: UpdateCallback) {
+		// Do absolutely nothing
 	}
 
 	/**
@@ -68,6 +75,32 @@ export class Resource {
 		storage: new Util.WeakValueMap(),
 		onUpdate: new Util.WeakEventBus(),
 	} satisfies StaticResourceMetadata
+
+	/**
+	 * Returns a zod schema that parses the input into this resource.
+	 * ```ts
+	 * class User extends ResourceClass.resourceExtend({
+	 * 	id: uniqueId(z.string()),
+	 * 	discriminator: z.number(),
+	 * 	name: z.string(),
+	 * }) {
+	 * 	// ...
+	 * }
+	 *
+	 * const messageSchema = z.object({
+	 * 	user: User.resourceSchema(),
+	 * 	content: z.string(),
+	 * })
+	 *
+	 * const message = messageSchema.parse({
+	 * 	user: { id: "123", discriminator: 123, name: "Test" },
+	 * 	content: "Hello, world!"
+	 * })
+	 * ```
+	 */
+	static resourceSchema<This extends typeof Resource>(this: This) {
+		return z.record(z.unknown()).transform((input) => new this(input) as InstanceType<This>)
+	}
 
 	static resourceExtend<This extends typeof Resource, Schema extends z.ZodRawShape>(
 		this: This,
@@ -103,6 +136,12 @@ export class Resource {
 				const cachedObject = newMetadata.storage.get(metadata.uniqueId)
 				const outputObject = cachedObject ?? this
 
+				// Cancel all the update managers associated with the current object
+				Metadata.get(outputObject).updateManagers.update(newMetadata, (updateMetadata) => {
+					updateMetadata?.forEach((updateManager) => updateManager.cancel())
+					return undefined
+				})
+
 				// @ts-expect-error - It's alright, we're assigning known keys
 				for (const key in parsedInput) outputObject[key] = parsedInput[key]
 				if (cachedObject) return cachedObject
@@ -110,6 +149,14 @@ export class Resource {
 				// Do some one-time things for uncached objects
 				newMetadata.storage.set(metadata.uniqueId, this)
 				this[Metadata.key].onUpdate.subscribe(newMetadata.onUpdate.dispatch) // Forward
+			}
+
+			override withUpdates(updateCallback: UpdateCallback): void {
+				Metadata.get(this).updateManagers.update(newMetadata, (updateManagers) => {
+					updateManagers ??= [] // Create a new array if it doesn't exist
+					updateManagers.push(new ResourceUpdateManager(updateCallback))
+					return updateManagers
+				})
 			}
 
 			// Because our properties are getters and setters, we need to override the toJSON method to include them.
@@ -151,10 +198,6 @@ export class Resource {
 		}
 	}
 }
-
-// function getUpdateEvents(resource: Resource) {
-
-// }
 
 /**
  * Returns a schema that assigns the parsed output to the current {@link UPDATING_METADATA}.

@@ -86,7 +86,7 @@ export class Resource {
 				super(input)
 
 				if (input === null || typeof input !== "object") {
-					throw new Error("Invalid Input - Expected an object but got something else")
+					throw new Error(`Invalid Input - Expected object but got '${input}'`)
 				}
 
 				// Parse the input to an intermediate object until we know the resourceId

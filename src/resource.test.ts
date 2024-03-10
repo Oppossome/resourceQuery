@@ -58,6 +58,9 @@ describe("Resource", () => {
 	it("should throw an error if the input is invalid", () => {
 		// @ts-expect-error - This is intentional
 		expect(() => new Message({ name: "John Doe", message: 123 })).toThrow()
+
+		// @ts-expect-error - This is intentional
+		expect(() => new Message(true)).toThrow("Invalid Input - Expected object but got 'true'")
 	})
 
 	it("should fire instance events", () => {

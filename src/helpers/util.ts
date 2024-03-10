@@ -1,9 +1,22 @@
 /**
+ * Function that debounces a function call.
+ * @param ms The amount of milliseconds to wait before calling the function.
+ */
+export function debounce(ms: number) {
+	let timeoutId: number | undefined
+	return (input: () => void) => {
+		if (ms === 0) return input() // No debounce
+		if (timeoutId) clearTimeout(timeoutId)
+		timeoutId = setTimeout(input, ms)
+	}
+}
+
+/**
  * A map that holds weak references to its values.
  * @template K The type of the keys.
  * @template {object} V The type of the values.
  */
-export class ValueMap<K, V extends object> {
+export class WeakValueMap<K, V extends object> {
 	// The map that holds the weak references.
 	#map = new Map<K, WeakRef<V>>()
 
@@ -50,7 +63,7 @@ export class ValueMap<K, V extends object> {
  *  }
  * }
  */
-export class EventBus<T> {
+export class WeakEventBus<T> {
 	#set = new Set<WeakRef<EventListener<T>>>()
 	#debounce: ReturnType<typeof debounce>
 
@@ -75,19 +88,6 @@ export class EventBus<T> {
 				listener.deref()?.(value)
 			}
 		})
-	}
-}
-
-/**
- * Function that debounces a function call.
- * @param ms The amount of milliseconds to wait before calling the function.
- */
-function debounce(ms: number) {
-	let timeoutId: number | undefined
-	return (input: () => void) => {
-		if (ms === 0) return input() // No debounce
-		if (timeoutId) clearTimeout(timeoutId)
-		timeoutId = setTimeout(input, ms)
 	}
 }
 

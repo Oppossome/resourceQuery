@@ -1,7 +1,7 @@
 import { z } from "zod"
 import { v4 as uuid } from "uuid"
 
-import { Metadata, Weak } from "./helpers"
+import { Metadata, Util } from "./helpers"
 
 /**
  * The current {@link ResourceMetadata} that is being updated.
@@ -32,13 +32,14 @@ function updateMetadata(resource: Resource, callback: () => void): ResourceMetad
 interface ResourceMetadata {
 	fields: Record<string, unknown>
 	uniqueId: string
-	onUpdate: Weak.EventBus<Resource>
+	onUpdate: Util.WeakEventBus<Resource>
+	updateCleanup: (() => void)[]
 }
 
 interface StaticResourceMetadata {
 	schema: z.ZodRawShape
-	storage: Weak.ValueMap<string, Resource>
-	onUpdate: Weak.EventBus<Resource>
+	storage: Util.WeakValueMap<string, Resource>
+	onUpdate: Util.WeakEventBus<Resource>
 }
 
 export class Resource {
@@ -49,7 +50,8 @@ export class Resource {
 	[Metadata.key]: ResourceMetadata = {
 		fields: {},
 		uniqueId: uuid(),
-		onUpdate: new Weak.EventBus(100),
+		onUpdate: new Util.WeakEventBus(100),
+		updateCleanup: [],
 	}
 
 	/**
@@ -63,8 +65,8 @@ export class Resource {
 
 	static [Metadata.key] = {
 		schema: {},
-		storage: new Weak.ValueMap(),
-		onUpdate: new Weak.EventBus(),
+		storage: new Util.WeakValueMap(),
+		onUpdate: new Util.WeakEventBus(),
 	} satisfies StaticResourceMetadata
 
 	static resourceExtend<This extends typeof Resource, Schema extends z.ZodRawShape>(
@@ -74,8 +76,8 @@ export class Resource {
 		const newMetadata = {
 			// For some reason, this is the only way to get the type to work correctly :/
 			schema: { ...Metadata.get(this).schema, ...schema } as Metadata.Get<This>["schema"] & Schema,
-			storage: new Weak.ValueMap<string, Resource>(),
-			onUpdate: new Weak.EventBus(),
+			storage: new Util.WeakValueMap<string, Resource>(),
+			onUpdate: new Util.WeakEventBus(),
 		} satisfies StaticResourceMetadata
 
 		type Object = z.ZodObject<(typeof newMetadata)["schema"]>
@@ -149,6 +151,10 @@ export class Resource {
 		}
 	}
 }
+
+// function getUpdateEvents(resource: Resource) {
+
+// }
 
 /**
  * Returns a schema that assigns the parsed output to the current {@link UPDATING_METADATA}.

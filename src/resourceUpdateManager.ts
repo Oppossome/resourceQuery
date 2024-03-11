@@ -55,7 +55,7 @@ export class ResourceUpdateManager {
 		})
 	}
 
-	performQuery<Method extends CacheEntry["method"]>(
+	#performQuery<Method extends CacheEntry["method"]>(
 		method: Method,
 		resource: typeof Resource,
 		callback: (cacheEntry: CacheEntryOf<Method> | undefined) => CacheEntryOf<Method>,
@@ -76,7 +76,7 @@ export class ResourceUpdateManager {
 		resource: Resource,
 		predicate: (resource: InstanceType<Resource>) => boolean,
 	) {
-		return this.performQuery("one", resource, (cacheEntry) => {
+		return this.#performQuery("one", resource, (cacheEntry) => {
 			cacheEntry ??= {
 				method: "one",
 				source: resource,
@@ -107,11 +107,13 @@ export class ResourceUpdateManager {
 		predicate: (resource: InstanceType<Resource>) => boolean,
 		source?: InstanceType<Resource>[],
 	) {
-		return this.performQuery("many", resource, (cacheEntry) => {
+		return this.#performQuery("many", resource, (cacheEntry) => {
 			// QoL - If source is provided and it doesn't match the predicate, throw an error
 			if (source && cacheEntry?.value !== source) {
 				for (const resource of source) {
-					if (!predicate(resource)) console.error("Original resources must match the predicate")
+					if (!predicate(resource)) {
+						throw new Error("Source provided does not match the predicate")
+					}
 				}
 			}
 

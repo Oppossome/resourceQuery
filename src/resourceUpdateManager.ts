@@ -41,11 +41,7 @@ export class ResourceUpdateManager {
 	#executeCallback() {
 		this.#executeDebounce(() => {
 			if (this.isCancelled) return // Don't execute the callback if the update manager has been cancelled
-
-			// Reset everything back to the initial state
-			this.#eventListeners.forEach((listener) => listener())
-			this.#eventListeners.clear()
-			this.#cacheIter = 0
+			this.#reset()
 
 			// Call the update callback
 			this.updateCallback({

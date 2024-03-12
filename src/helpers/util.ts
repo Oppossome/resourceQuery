@@ -56,12 +56,6 @@ export class WeakValueMap<K, V extends object> {
 		}
 	}
 
-	update(key: K, callback: (value: V | undefined) => V | undefined) {
-		const newValue = callback(this.get(key))
-		if (newValue === undefined) this.delete(key)
-		else this.set(key, newValue)
-	}
-
 	forEach(callback: (value: V, key: K) => void) {
 		for (const [key, value] of this) {
 			callback(value, key)

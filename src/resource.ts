@@ -10,8 +10,6 @@ import { ResourceUpdateManager, UpdateCallback } from "./resourceUpdateManager"
  */
 let UPDATING_METADATA: ResourceMetadata | undefined
 
-export type Input<This extends typeof Resource> = z.input<z.ZodObject<Metadata.Get<This>["schema"]>>
-
 /**
  * Sets the current {@link UPDATING_METADATA} to the given metadata and calls the callback.
  * @param {ResourceMetadata} resource The resource metadata to set.
@@ -31,6 +29,20 @@ function updateMetadata(resource: Resource, callback: () => void): ResourceMetad
 	UPDATING_METADATA = lastMetadata
 	return currentMetadata
 }
+
+/**
+ * The input type for a resource.
+ * @example
+ * class User extends Resource.resourceExtend({
+ * 	id: uniqueId(z.string()),
+ * 	name: z.string(),
+ * }) {
+ * 	constructor(input: Input<typeof User>) {
+ * 		super(input)
+ * 	}
+ * }
+ */
+export type Input<This extends typeof Resource> = z.input<z.ZodObject<Metadata.Get<This>["schema"]>>
 
 interface ResourceMetadata {
 	fields: Record<string, unknown>

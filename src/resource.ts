@@ -1,7 +1,8 @@
 import { z } from "zod"
 import { v4 as uuid } from "uuid"
 
-import { Metadata, Weak } from "./helpers"
+import { Metadata, Util } from "./helpers"
+import { ResourceUpdateManager, UpdateCallback } from "./resourceUpdateManager"
 
 /**
  * The current {@link ResourceMetadata} that is being updated.
@@ -29,16 +30,31 @@ function updateMetadata(resource: Resource, callback: () => void): ResourceMetad
 	return currentMetadata
 }
 
+/**
+ * The input type for a resource.
+ * @example
+ * class User extends Resource.resourceExtend({
+ * 	id: uniqueId(z.string()),
+ * 	name: z.string(),
+ * }) {
+ * 	constructor(input: Input<typeof User>) {
+ * 		super(input)
+ * 	}
+ * }
+ */
+export type Input<This extends typeof Resource> = z.input<z.ZodObject<Metadata.Get<This>["schema"]>>
+
 interface ResourceMetadata {
 	fields: Record<string, unknown>
 	uniqueId: string
-	onUpdate: Weak.EventBus<Resource>
+	onUpdate: Util.WeakEventBus<Resource>
+	updateManagers: ResourceUpdateManager[]
 }
 
 interface StaticResourceMetadata {
 	schema: z.ZodRawShape
-	storage: Weak.ValueMap<string, Resource>
-	onUpdate: Weak.EventBus<Resource>
+	storage: Util.WeakValueMap<string, Resource>
+	onUpdate: Util.WeakEventBus<Resource>
 }
 
 export class Resource {
@@ -49,7 +65,12 @@ export class Resource {
 	[Metadata.key]: ResourceMetadata = {
 		fields: {},
 		uniqueId: uuid(),
-		onUpdate: new Weak.EventBus(100),
+		onUpdate: new Util.WeakEventBus(100),
+		updateManagers: [],
+	}
+
+	withUpdates(updateCallback: UpdateCallback) {
+		Metadata.get(this).updateManagers.push(new ResourceUpdateManager(updateCallback))
 	}
 
 	/**
@@ -63,9 +84,35 @@ export class Resource {
 
 	static [Metadata.key] = {
 		schema: {},
-		storage: new Weak.ValueMap(),
-		onUpdate: new Weak.EventBus(),
+		storage: new Util.WeakValueMap(),
+		onUpdate: new Util.WeakEventBus(),
 	} satisfies StaticResourceMetadata
+
+	/**
+	 * Returns a zod schema that parses the input into this resource.
+	 * ```ts
+	 * class User extends ResourceClass.resourceExtend({
+	 * 	id: uniqueId(z.string()),
+	 * 	discriminator: z.number(),
+	 * 	name: z.string(),
+	 * }) {
+	 * 	// ...
+	 * }
+	 *
+	 * const messageSchema = z.object({
+	 * 	user: User.resourceSchema(),
+	 * 	content: z.string(),
+	 * })
+	 *
+	 * const message = messageSchema.parse({
+	 * 	user: { id: "123", discriminator: 123, name: "Test" },
+	 * 	content: "Hello, world!"
+	 * })
+	 * ```
+	 */
+	static resourceSchema<This extends typeof Resource>(this: This) {
+		return z.record(z.unknown()).transform((input) => new this(input) as InstanceType<This>)
+	}
 
 	static resourceExtend<This extends typeof Resource, Schema extends z.ZodRawShape>(
 		this: This,
@@ -74,8 +121,8 @@ export class Resource {
 		const newMetadata = {
 			// For some reason, this is the only way to get the type to work correctly :/
 			schema: { ...Metadata.get(this).schema, ...schema } as Metadata.Get<This>["schema"] & Schema,
-			storage: new Weak.ValueMap<string, Resource>(),
-			onUpdate: new Weak.EventBus(),
+			storage: new Util.WeakValueMap<string, Resource>(),
+			onUpdate: new Util.WeakEventBus(),
 		} satisfies StaticResourceMetadata
 
 		type Object = z.ZodObject<(typeof newMetadata)["schema"]>
@@ -100,6 +147,13 @@ export class Resource {
 
 				const cachedObject = newMetadata.storage.get(metadata.uniqueId)
 				const outputObject = cachedObject ?? this
+
+				// If we have a cached object, we want to cancel its update managers so we don't register duplicate events
+				if (cachedObject && cachedObject !== this) {
+					const currentMetadata = Metadata.get(cachedObject)
+					currentMetadata.updateManagers.forEach((manager) => manager.cancel())
+					currentMetadata.updateManagers = []
+				}
 
 				// @ts-expect-error - It's alright, we're assigning known keys
 				for (const key in parsedInput) outputObject[key] = parsedInput[key]

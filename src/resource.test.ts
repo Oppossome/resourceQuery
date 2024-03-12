@@ -1,15 +1,23 @@
 import { z } from "zod"
 import { vi, it, expect, describe, beforeEach, afterEach } from "vitest"
 
-import { Resource, uniqueId } from "./resource"
-import { Metadata } from "./helpers"
-import { EventBus } from "./helpers/weak"
+import { Resource, uniqueId, type Input } from "./resource"
+import { Metadata, Util } from "./helpers"
 
-function spyOnEvent<V>(input: EventBus<V>) {
+function spyOnEvent<V>(input: Util.WeakEventBus<V>) {
 	const spy = vi.fn()
 	input.subscribe(spy)
 	return spy
 }
+
+beforeEach(() => {
+	vi.useFakeTimers()
+})
+
+afterEach(() => {
+	vi.runAllTimers()
+	vi.restoreAllMocks()
+})
 
 describe("Resource", () => {
 	class User extends Resource.resourceExtend({
@@ -27,14 +35,6 @@ describe("Resource", () => {
 			super.message = value
 		}
 	}
-
-	beforeEach(() => {
-		vi.useFakeTimers()
-	})
-
-	afterEach(() => {
-		vi.restoreAllMocks()
-	})
 
 	it("should be possible to extend a resource", () => {
 		const message = new Message({ name: "John Doe", message: "Hello, world!" })
@@ -69,13 +69,13 @@ describe("Resource", () => {
 
 		const updateSpy = spyOnEvent(Metadata.get(message).onUpdate)
 
-		vi.advanceTimersByTime(150)
+		vi.runAllTimers()
 		expect(updateSpy).toHaveBeenCalledTimes(1)
 		expect(updateSpy).toHaveBeenCalledWith(message)
 
 		message.message = "Hello, foo!"
 		message.message = "Hello, foo 2!" // Should debounce
-		vi.advanceTimersByTime(150)
+		vi.runAllTimers()
 		expect(updateSpy).toHaveBeenCalledTimes(2)
 		expect(updateSpy).toHaveBeenCalledWith(message)
 	})
@@ -84,13 +84,89 @@ describe("Resource", () => {
 		const message = new Message({ name: "John Doe", message: "Hello, world!" })
 		const updateSpy = spyOnEvent(Metadata.get(Message).onUpdate)
 
-		vi.advanceTimersByTime(150)
+		vi.runAllTimers()
 		expect(updateSpy).toHaveBeenCalledTimes(1)
 		expect(updateSpy).toHaveBeenCalledWith(message)
 
 		message.message = "Hello, foo!"
-		vi.advanceTimersByTime(150)
+		vi.runAllTimers()
 		expect(updateSpy).toHaveBeenCalledTimes(2)
 		expect(updateSpy).toHaveBeenCalledWith(message)
+	})
+})
+
+describe("Resource.withUpdates", () => {
+	const updateSpy = vi.fn()
+
+	class Message extends Resource.resourceExtend({
+		userId: z.string(),
+		message: z.string(),
+	}) {
+		//
+	}
+
+	class Roles extends Resource.resourceExtend({
+		userId: uniqueId(),
+		role: z.string(),
+	}) {}
+
+	class User extends Resource.resourceExtend({
+		id: uniqueId(),
+		role: z.optional(Roles.resourceSchema()),
+		messages: z.array(Message.resourceSchema()),
+	}) {
+		constructor(input: Input<typeof User>) {
+			super(input)
+
+			this.withUpdates((method) => {
+				this.role = method.queryOne(Roles, (role) => role.userId === this.id)
+			})
+
+			this.withUpdates((methods) => {
+				this.messages = methods.queryMany(
+					Message,
+					(message) => {
+						updateSpy()
+						return message.userId === this.id
+					},
+					this.messages,
+				)
+			})
+		}
+	}
+
+	afterEach(() => {
+		vi.runAllTimers()
+		updateSpy.mockClear()
+	})
+
+	it("should keep the user's list of messages up to date", () => {
+		const user = new User({ id: "123", messages: [] })
+		const message = new Message({ userId: "123", message: "Hello, world!" })
+
+		vi.runAllTimers()
+		expect(user.messages).toEqual([message])
+
+		const message2 = new Message({ userId: "123", message: "Hello, world!" })
+
+		vi.runAllTimers()
+		expect(user.messages).toEqual([message, message2])
+	})
+
+	it("should keep the user's role up to date", () => {
+		const user = new User({ id: "123", messages: [] })
+		const role = new Roles({ userId: "123", role: "admin" })
+
+		vi.runAllTimers()
+		expect(user.role).toBe(role)
+	})
+
+	it("shouldn't excessively update if the user has been reinstantiated", () => {
+		new User({ id: "123", messages: [] })
+		new User({ id: "123", messages: [] })
+		new Message({ userId: "123", message: "Hello, world!" })
+
+		vi.runAllTimers()
+		expect(updateSpy).toHaveBeenCalledTimes(1)
 	})
 })

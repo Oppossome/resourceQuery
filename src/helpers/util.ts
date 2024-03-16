@@ -102,6 +102,21 @@ export class WeakEventBus<T> {
 		this.dispatch = this.dispatch.bind(this)
 	}
 
+	/**
+	 * Subscribes to the event with a promise that resolves when the event is dispatched when the callback returns true.
+	 * @param callback The callback that will be called when the event is dispatched.
+	 * @returns A promise that resolves when the event is dispatched.
+	 */
+	subscribeUntil<S extends T>(callback: (value: T) => value is S): Promise<S> {
+		return new Promise((resolve) => {
+			const unsub = this.subscribe((value) => {
+				if (!callback(value)) return
+				setTimeout(unsub, 0)
+				resolve(value)
+			})
+		})
+	}
+
 	subscribe(listener: EventListener<T>) {
 		const storage = new WeakRef(listener)
 		this.#set.add(storage)

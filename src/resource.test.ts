@@ -4,7 +4,7 @@ import { vi, it, expect, describe, beforeEach, afterEach } from "vitest"
 import { Resource, uniqueId, type Input } from "./resource"
 import { Metadata, Util } from "./helpers"
 
-function spyOnEvent<V>(input: Util.WeakEventBus<V>) {
+export function spyOnEvent<V>(input: Util.WeakEventBus<V>) {
 	const spy = vi.fn()
 	input.subscribe(spy)
 	return spy

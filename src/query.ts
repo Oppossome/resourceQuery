@@ -6,8 +6,8 @@ import { WeakValueMap } from "./helpers/util"
 import { Metadata } from "./helpers"
 
 // prettier-ignore
-export interface QueryOptions<Schema extends z.ZodSchema, Props extends any[]> {
-	query: (this: Query<Schema, Props>, schema: Schema, ...props: Props) => Promise<z.infer<Schema> | undefined>
+export interface QueryOptions<Schema extends z.AnyZodObject, Props extends any[]> {
+	query: (this: Query<Schema, any[]>, schema: Schema, ...props: Props) => Promise<z.infer<Schema> | undefined>
   cacheKey?: (...props: F.NoInfer<Props>) => string
   schema: Schema
 }
@@ -17,26 +17,31 @@ export interface QueryOptions<Schema extends z.ZodSchema, Props extends any[]> {
  * @template CacheKey The type of the cache key.
  * @template Result The type of the result.
  */
-export class Query<Schema extends z.ZodSchema, Props extends any[]> extends Resource.resourceExtend(
-	{
-		loading: z.boolean(),
-		result: z.any(),
-		error: z.any(),
-	},
-) {
-	#params: Props
+export class Query<
+	Schema extends z.AnyZodObject,
+	Props extends any[],
+> extends Resource.resourceExtend({
+	loading: z.boolean(),
+	result: z.any(),
+	error: z.any(),
+}) {
+	protected params: Props
 
 	constructor(
 		protected options: QueryOptions<Schema, Props>,
 		...params: Props
 	) {
 		super({ loading: false })
-		this.#params = params
+		this.params = params
 
 		// Weakly subscribe to the onGet event, and begin the query if it was called.
 		Metadata.get(this).onGet.subscribeUntil(() => {
 			this.initialInvalidation()
 			return true
+		})
+
+		Metadata.get(this).onUpdate.subscribe(() => {
+			console.log(JSON.stringify(this))
 		})
 	}
 
@@ -67,12 +72,15 @@ export class Query<Schema extends z.ZodSchema, Props extends any[]> extends Reso
 
 	resolved() {
 		this.initialInvalidation() // If the query was never called, call it now.
-		return Metadata.get(this).onUpdate.subscribeUntil(() => this.loading === false)
+		return Metadata.get(this).onUpdate.subscribeUntil(() => {
+			return this.loading === false
+		})
 	}
 
 	#wasParameterCalled = false
-	// Invalidates the query if it was never called before.
 	protected initialInvalidation() {
+		// Weakly subscribe to the onGet event, and begin the query if it was called.
+		console.log("initialInvalidation", this.#wasParameterCalled)
 		if (this.#wasParameterCalled) return
 		this.#wasParameterCalled = true
 		this.invalidate()
@@ -85,10 +93,12 @@ export class Query<Schema extends z.ZodSchema, Props extends any[]> extends Reso
 		// If the query is already loading, don't run it again.
 		if (this.loading) return
 		this.loading = true
+		console.log("Running query")
 
 		// Run the query, and set the result if its returned.
 		try {
-			const result = await this.options.query.call(this, this.options.schema, ...this.#params)
+			const typedThis = this as unknown as Query<Schema, any[]>
+			const result = await this.options.query.call(typedThis, this.options.schema, ...this.params)
 			if (result !== undefined) this.result = result
 		} catch (error) {
 			if (error instanceof Error) this.result = error
@@ -99,7 +109,7 @@ export class Query<Schema extends z.ZodSchema, Props extends any[]> extends Reso
 		this.loading = false
 	}
 
-	static defineQuery<Schema extends z.ZodSchema, Props extends any[]>(
+	static defineQuery<Schema extends z.AnyZodObject, Props extends any[]>(
 		options: QueryOptions<Schema, Props>,
 	) {
 		return new Manager(options, (...props: Props) => new Query(options, ...props)).callback()
@@ -107,7 +117,7 @@ export class Query<Schema extends z.ZodSchema, Props extends any[]> extends Reso
 }
 
 export class Manager<
-	Schema extends z.ZodSchema,
+	Schema extends z.AnyZodObject,
 	Props extends any[],
 	Output extends Query<Schema, Props>,
 > {
@@ -136,12 +146,12 @@ export class Manager<
 	}
 }
 
-// interface TestOptions<Schema extends z.ZodSchema<{ page: number }>, Props extends any[]>
+// interface TestOptions<Schema extends z.AnyZodObject<{ page: number }>, Props extends any[]>
 // 	extends QueryOptions<Schema, Props> {
 // 	test: 5
 // }
 
-// class TestQuery<Schema extends z.ZodSchema<{ page: number }>, Props extends any[]> extends Query<
+// class TestQuery<Schema extends z.AnyZodObject<{ page: number }>, Props extends any[]> extends Query<
 // 	Schema,
 // 	Props
 // > {
@@ -149,7 +159,7 @@ export class Manager<
 // 		super(options, ...props)
 // 	}
 
-// 	static override defineQuery<Schema extends z.ZodSchema, Props extends any[]>(
+// 	static override defineQuery<Schema extends z.AnyZodObject, Props extends any[]>(
 // 		options: TestOptions<Schema, Props>,
 // 	) {
 // 		return new Manager(options, (...props: Props) => new TestQuery(options, ...props)).callback()

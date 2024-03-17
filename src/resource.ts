@@ -193,6 +193,7 @@ export class Resource {
 					return this[Metadata.key].fields[key]
 				},
 				set(value) {
+					console.log("Setting", key, value)
 					this[Metadata.key].fields[key] = value
 					this[Metadata.key].onUpdate.dispatch(this)
 				},

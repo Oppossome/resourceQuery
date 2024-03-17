@@ -111,8 +111,8 @@ export class Manager<
 	Props extends any[],
 	Output extends Query<Schema, Props>,
 > {
-	#callback: (...props: Props) => Output
 	#options: QueryOptions<Schema, Props>
+	#callback: (...props: Props) => Output
 
 	constructor(options: QueryOptions<Schema, Props>, callback: (...props: Props) => Output) {
 		this.#options = options

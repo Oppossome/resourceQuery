@@ -3,6 +3,7 @@ import { F } from "ts-toolbelt"
 
 import { Resource } from "./resource"
 import { WeakValueMap } from "./helpers/util"
+import { Metadata } from "./helpers"
 
 // prettier-ignore
 export interface QueryOptions<Schema extends z.ZodSchema, Props extends any[]> {
@@ -23,7 +24,6 @@ export class Query<Schema extends z.ZodSchema, Props extends any[]> extends Reso
 		error: z.any(),
 	},
 ) {
-	#wasParameterCalled = false
 	#params: Props
 
 	constructor(
@@ -32,7 +32,12 @@ export class Query<Schema extends z.ZodSchema, Props extends any[]> extends Reso
 	) {
 		super({ loading: false })
 		this.#params = params
-		this.invalidate()
+
+		// Weakly subscribe to the onGet event, and begin the query if it was called.
+		Metadata.get(this).onGet.subscribeUntil(() => {
+			this.initialInvalidation()
+			return true
+		})
 	}
 
 	override get result(): z.infer<Schema> | undefined {
@@ -58,6 +63,19 @@ export class Query<Schema extends z.ZodSchema, Props extends any[]> extends Reso
 	override set error(error: Error | undefined) {
 		if (error) console.error(error)
 		super.error = error
+	}
+
+	resolved() {
+		this.initialInvalidation() // If the query was never called, call it now.
+		return Metadata.get(this).onUpdate.subscribeUntil(() => this.loading === false)
+	}
+
+	#wasParameterCalled = false
+	// Invalidates the query if it was never called before.
+	protected initialInvalidation() {
+		if (this.#wasParameterCalled) return
+		this.#wasParameterCalled = true
+		this.invalidate()
 	}
 
 	/**
@@ -97,8 +115,8 @@ export class Manager<
 	#options: QueryOptions<Schema, Props>
 
 	constructor(options: QueryOptions<Schema, Props>, callback: (...props: Props) => Output) {
-		this.#callback = callback
 		this.#options = options
+		this.#callback = callback
 	}
 
 	#cache = new WeakValueMap<string, Output>()

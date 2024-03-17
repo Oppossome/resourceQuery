@@ -77,7 +77,7 @@ export class WeakValueMap<K, V extends object> {
 
 /**
  * An event emitter that holds weak references to its subscribers.
- * @template T The type of the value that will be dispatched.
+ * @template Value The type of the value that will be dispatched.
  *
  * @example
  * const event = new WeakEvent<number>()
@@ -90,8 +90,8 @@ export class WeakValueMap<K, V extends object> {
  *  }
  * }
  */
-export class WeakEventBus<T> {
-	#set = new Set<WeakRef<EventListener<T>>>()
+export class WeakEventBus<Value> {
+	#set = new Set<WeakRef<EventListener<Value>>>()
 	#debounce: ReturnType<typeof debounce>
 
 	constructor(ms: number = 0) {
@@ -103,11 +103,20 @@ export class WeakEventBus<T> {
 	}
 
 	/**
-	 * Subscribes to the event with a promise that resolves when the event is dispatched when the callback returns true.
+	 * Returns a promise that resolves when the event is dispatched and the callback returns true.
 	 * @param callback The callback that will be called when the event is dispatched.
 	 * @returns A promise that resolves when the event is dispatched.
 	 */
-	subscribeUntil<S extends T>(callback: (value: T) => value is S): Promise<S> {
+	subscribeUntil(callback: (value: Value) => boolean): Promise<Value>
+
+	/**
+	 * Returns a promise that resolves when the event is dispatched and the callback returns true.
+	 * @param callback The callback that will be called when the event is dispatched.
+	 * @returns A promise that resolves when the event is dispatched.
+	 */
+	subscribeUntil<Subset extends Value>(callback: (value: Value) => value is Subset): Promise<Subset>
+
+	subscribeUntil(callback: (value: Value) => boolean): Promise<Value> {
 		return new Promise((resolve) => {
 			const unsub = this.subscribe((value) => {
 				if (!callback(value)) return
@@ -117,14 +126,14 @@ export class WeakEventBus<T> {
 		})
 	}
 
-	subscribe(listener: EventListener<T>) {
+	subscribe(listener: EventListener<Value>) {
 		const storage = new WeakRef(listener)
 		this.#set.add(storage)
 
 		return () => this.#set.delete(storage)
 	}
 
-	dispatch(value: T) {
+	dispatch(value: Value) {
 		this.#debounce(() => {
 			for (const listener of this.#set) {
 				listener.deref()?.(value)

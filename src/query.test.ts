@@ -3,7 +3,8 @@ import { vi, it, expect, describe, beforeEach, afterEach } from "vitest"
 
 import { spyOnEvent } from "./resource.test"
 import { Query, Manager, type QueryOptions } from "./query"
-import { Metadata } from "./helpers"
+import { Metadata, Util } from "./helpers"
+import { Resource } from "./resource"
 
 beforeEach(() => {
 	vi.useFakeTimers()
@@ -20,6 +21,12 @@ describe("Query", () => {
 		schema: z.object({ page: z.number() }),
 		query: async function (schema, page: number = Math.random() * Number.MAX_SAFE_INTEGER) {
 			querySpy(page)
+			await Util.wait(100)
+
+			this.withUpdates(({ queryOne }) => {
+				queryOne(Resource, () => true)
+			})
+
 			return schema.parse({ page })
 		},
 	})
@@ -72,6 +79,22 @@ describe("Query", () => {
 
 		query = await resolvePromise
 		expect(query.error).not.toBeUndefined()
+	})
+
+	it("should reset the update managers when invalidate is called", async () => {
+		const query = getTestQuery(123)
+		const queryMetadata = Metadata.get(query)
+
+		query.resolved()
+		await vi.runAllTimersAsync()
+
+		expect(queryMetadata.updateManagers.length).toBe(1)
+		query.invalidate()
+
+		expect(queryMetadata.updateManagers.length).toBe(0)
+		await vi.runAllTimersAsync()
+
+		expect(queryMetadata.updateManagers.length).toBe(1)
 	})
 
 	it("should be possible to extend the Query class", async () => {

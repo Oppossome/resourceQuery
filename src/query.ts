@@ -67,20 +67,23 @@ export class Query<Schema extends z.ZodSchema, Props extends any[]> extends Reso
 		return Metadata.get(this).onUpdate.subscribeUntil(() => this.loading === false)
 	}
 
-	#wasParameterCalled = false
+	#wasInvalidateCalled = false
 	protected initialInvalidation() {
-		if (this.#wasParameterCalled) return
-		this.#wasParameterCalled = true
+		if (this.#wasInvalidateCalled) return
 		this.invalidate()
 	}
 
-	/**
-	 * Invalidates the query and re-runs it.
-	 */
+	// Runs the query and sets the result.
 	async invalidate() {
 		// If the query is already loading, don't run it again.
 		if (this.loading) return
+		this.#wasInvalidateCalled = true
 		this.loading = true
+
+		// Reset the update managers to allow queries to utilize withUpdates.
+		const currentMetadata = Metadata.get(this)
+		currentMetadata.updateManagers.forEach((manager) => manager.cancel())
+		currentMetadata.updateManagers = []
 
 		// Run the query, and set the result if its returned.
 		try {

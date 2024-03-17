@@ -1,4 +1,14 @@
 /**
+ * Function that waits for a certain amount of time before resolving.
+ * @param ms The amount of milliseconds to wait before resolving.
+ */
+export function wait(ms: number) {
+	return new Promise((resolve) => {
+		setTimeout(resolve, ms)
+	})
+}
+
+/**
  * Function that debounces a function call.
  * @param ms The amount of milliseconds to wait before calling the function.
  */

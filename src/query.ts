@@ -39,10 +39,6 @@ export class Query<
 			this.initialInvalidation()
 			return true
 		})
-
-		Metadata.get(this).onUpdate.subscribe(() => {
-			console.log(JSON.stringify(this))
-		})
 	}
 
 	override get result(): z.infer<Schema> | undefined {
@@ -79,8 +75,6 @@ export class Query<
 
 	#wasParameterCalled = false
 	protected initialInvalidation() {
-		// Weakly subscribe to the onGet event, and begin the query if it was called.
-		console.log("initialInvalidation", this.#wasParameterCalled)
 		if (this.#wasParameterCalled) return
 		this.#wasParameterCalled = true
 		this.invalidate()
@@ -93,7 +87,6 @@ export class Query<
 		// If the query is already loading, don't run it again.
 		if (this.loading) return
 		this.loading = true
-		console.log("Running query")
 
 		// Run the query, and set the result if its returned.
 		try {

@@ -55,6 +55,7 @@ export class Query<Schema extends z.ZodSchema, Props extends any[]> extends Reso
 
 	override set error(error: Error | undefined) {
 		if (error) console.error(error)
+		super.result = undefined
 		super.error = error
 	}
 

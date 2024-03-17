@@ -5,11 +5,14 @@ import { Resource } from "./resource"
 import { WeakValueMap } from "./helpers/util"
 import { Metadata } from "./helpers"
 
-// prettier-ignore
 export interface QueryOptions<Schema extends z.ZodSchema, Props extends any[]> {
-	query: (this: Query<Schema, any[]>, schema: Schema, ...props: Props) => Promise<z.infer<Schema> | undefined>
-  cacheKey?: (...props: F.NoInfer<Props>) => string
-  schema: Schema
+	query: (
+		this: Query<Schema, any[]>,
+		schema: Schema,
+		...props: Props
+	) => Promise<z.infer<Schema> | undefined>
+	cacheKey?: (...props: F.NoInfer<Props>) => string
+	schema: Schema
 }
 
 /**
@@ -54,7 +57,6 @@ export class Query<Schema extends z.ZodSchema, Props extends any[]> extends Reso
 	}
 
 	override set error(error: Error | undefined) {
-		if (error) console.error(error)
 		super.result = undefined
 		super.error = error
 	}

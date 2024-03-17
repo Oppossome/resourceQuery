@@ -2,7 +2,7 @@ import { z } from "zod"
 import { vi, it, expect, describe, beforeEach, afterEach } from "vitest"
 
 import { spyOnEvent } from "./resource.test"
-import { Query } from "./query"
+import { Query, Manager, type QueryOptions } from "./query"
 import { Metadata } from "./helpers"
 
 beforeEach(() => {
@@ -60,6 +60,62 @@ describe("Query", () => {
 		expect(updateSpy).toHaveBeenCalledTimes(1)
 
 		await vi.runAllTimersAsync()
+		expect(await resolvePromise).toBe(query)
+	})
+
+	it("should catch errors and set the error field", async () => {
+		// @ts-expect-error - This is intentional
+		let query = getTestQuery("123")
+
+		const resolvePromise = query.resolved()
+		await vi.runAllTimersAsync()
+
+		query = await resolvePromise
+		expect(query.error).not.toBeUndefined()
+	})
+
+	it("should be possible to extend the Query class", async () => {
+		interface TestOptions<Schema extends z.ZodSchema<{ page: number }>, Props extends any[]>
+			extends QueryOptions<Schema, Props> {
+			test: 5
+		}
+
+		class TestQuery<
+			Schema extends z.ZodSchema<{ page: number }>,
+			Props extends any[],
+		> extends Query<Schema, Props> {
+			constructor(options: TestOptions<Schema, Props>, ...props: Props) {
+				super(options, ...props)
+			}
+
+			static override defineQuery<
+				Schema extends z.ZodSchema<{ page: number }>,
+				Props extends any[],
+			>(options: TestOptions<Schema, Props>) {
+				return new Manager(
+					options,
+					(...props: Props) => new TestQuery(options, ...props),
+				).callback()
+			}
+		}
+
+		const myQuery = TestQuery.defineQuery({
+			test: 5,
+			schema: z.object({ page: z.number() }),
+			query: async function (_, test: number) {
+				return { page: test }
+			},
+		})
+
+		const query = myQuery(12345)
+
+		// @ts-expect-error - This is intentional to for testing
+		expect(query.options.test).toBe(5)
+		expect(query).toBeInstanceOf(TestQuery)
+
+		const resolvePromise = query.resolved()
+		vi.runAllTimersAsync()
+
 		expect(await resolvePromise).toBe(query)
 	})
 })

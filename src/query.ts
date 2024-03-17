@@ -6,7 +6,7 @@ import { WeakValueMap } from "./helpers/util"
 import { Metadata } from "./helpers"
 
 // prettier-ignore
-export interface QueryOptions<Schema extends z.AnyZodObject, Props extends any[]> {
+export interface QueryOptions<Schema extends z.ZodSchema, Props extends any[]> {
 	query: (this: Query<Schema, any[]>, schema: Schema, ...props: Props) => Promise<z.infer<Schema> | undefined>
   cacheKey?: (...props: F.NoInfer<Props>) => string
   schema: Schema
@@ -17,14 +17,13 @@ export interface QueryOptions<Schema extends z.AnyZodObject, Props extends any[]
  * @template CacheKey The type of the cache key.
  * @template Result The type of the result.
  */
-export class Query<
-	Schema extends z.AnyZodObject,
-	Props extends any[],
-> extends Resource.resourceExtend({
-	loading: z.boolean(),
-	result: z.any(),
-	error: z.any(),
-}) {
+export class Query<Schema extends z.ZodSchema, Props extends any[]> extends Resource.resourceExtend(
+	{
+		loading: z.boolean(),
+		result: z.any(),
+		error: z.any(),
+	},
+) {
 	protected params: Props
 
 	constructor(
@@ -45,16 +44,9 @@ export class Query<
 		return super.result
 	}
 
-	override set result(result: z.infer<Schema> | Error | undefined) {
-		// Order Matters: status goes from "SUCCESS" to "ERROR"
-		if (result instanceof Error) {
-			this.error = result
-			super.result = undefined
-		}
-
-		// Order Matters: status goes from "ERROR" to "SUCCESS"
+	override set result(result: z.infer<Schema> | undefined) {
 		super.result = result
-		this.error = undefined
+		super.error = undefined
 	}
 
 	override get error(): Error | undefined {
@@ -66,11 +58,10 @@ export class Query<
 		super.error = error
 	}
 
-	resolved() {
-		this.initialInvalidation() // If the query was never called, call it now.
-		return Metadata.get(this).onUpdate.subscribeUntil(() => {
-			return this.loading === false
-		})
+	resolved(): Promise<this> {
+		this.initialInvalidation()
+		// @ts-expect-error - This is intentional
+		return Metadata.get(this).onUpdate.subscribeUntil(() => this.loading === false)
 	}
 
 	#wasParameterCalled = false
@@ -94,15 +85,15 @@ export class Query<
 			const result = await this.options.query.call(typedThis, this.options.schema, ...this.params)
 			if (result !== undefined) this.result = result
 		} catch (error) {
-			if (error instanceof Error) this.result = error
-			else if (typeof error === "string") this.result = new Error(error)
-			else this.result = new Error("An unknown error occurred.")
+			if (error instanceof Error) this.error = error
+			else if (typeof error === "string") this.error = new Error(error)
+			else this.error = new Error("An unknown error occurred.")
 		}
 
 		this.loading = false
 	}
 
-	static defineQuery<Schema extends z.AnyZodObject, Props extends any[]>(
+	static defineQuery<Schema extends z.ZodSchema, Props extends any[]>(
 		options: QueryOptions<Schema, Props>,
 	) {
 		return new Manager(options, (...props: Props) => new Query(options, ...props)).callback()
@@ -110,7 +101,7 @@ export class Query<
 }
 
 export class Manager<
-	Schema extends z.AnyZodObject,
+	Schema extends z.ZodSchema,
 	Props extends any[],
 	Output extends Query<Schema, Props>,
 > {
@@ -138,35 +129,3 @@ export class Manager<
 		}
 	}
 }
-
-// interface TestOptions<Schema extends z.AnyZodObject<{ page: number }>, Props extends any[]>
-// 	extends QueryOptions<Schema, Props> {
-// 	test: 5
-// }
-
-// class TestQuery<Schema extends z.AnyZodObject<{ page: number }>, Props extends any[]> extends Query<
-// 	Schema,
-// 	Props
-// > {
-// 	constructor(options: TestOptions<Schema, Props>, ...props: Props) {
-// 		super(options, ...props)
-// 	}
-
-// 	static override defineQuery<Schema extends z.AnyZodObject, Props extends any[]>(
-// 		options: TestOptions<Schema, Props>,
-// 	) {
-// 		return new Manager(options, (...props: Props) => new TestQuery(options, ...props)).callback()
-// 	}
-// }
-
-// const myQuery = TestQuery.defineQuery({
-// 	test: 5,
-// 	schema: z.object({ page: z.number() }),
-// 	query: async function (_, test: number) {
-// 		//
-
-// 		return { page: test }
-// 	},
-// })
-
-// myQuery(5)

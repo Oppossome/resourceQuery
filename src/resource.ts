@@ -113,7 +113,7 @@ export class Resource {
 	 * ```
 	 */
 	static resourceSchema<This extends typeof Resource>(this: This) {
-		return z.record(z.unknown()).transform((input) => new this(input) as InstanceType<This>)
+		return z.unknown().transform((input) => new this(input) as InstanceType<This>)
 	}
 
 	static resourceExtend<This extends typeof Resource, Schema extends z.ZodRawShape>(

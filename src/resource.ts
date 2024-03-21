@@ -47,6 +47,7 @@ export type Input<This extends typeof Resource> = z.input<z.ZodObject<Metadata.G
 interface ResourceMetadata {
 	fields: Record<string, unknown>
 	uniqueId: string
+	onGet: Util.WeakEventBus<Resource>
 	onUpdate: Util.WeakEventBus<Resource>
 	updateManagers: ResourceUpdateManager[]
 }
@@ -65,6 +66,7 @@ export class Resource {
 	[Metadata.key]: ResourceMetadata = {
 		fields: {},
 		uniqueId: uuid(),
+		onGet: new Util.WeakEventBus(100),
 		onUpdate: new Util.WeakEventBus(100),
 		updateManagers: [],
 	}
@@ -111,7 +113,7 @@ export class Resource {
 	 * ```
 	 */
 	static resourceSchema<This extends typeof Resource>(this: This) {
-		return z.record(z.unknown()).transform((input) => new this(input) as InstanceType<This>)
+		return z.unknown().transform((input) => new this(input) as InstanceType<This>)
 	}
 
 	static resourceExtend<This extends typeof Resource, Schema extends z.ZodRawShape>(
@@ -187,6 +189,7 @@ export class Resource {
 		for (const key in schema) {
 			Object.defineProperty(Extension.prototype, key, {
 				get() {
+					this[Metadata.key].onGet.dispatch(this)
 					return this[Metadata.key].fields[key]
 				},
 				set(value) {

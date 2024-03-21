@@ -4,7 +4,7 @@ import { vi, it, expect, describe, beforeEach, afterEach } from "vitest"
 import { Resource, uniqueId, type Input } from "./resource"
 import { Metadata, Util } from "./helpers"
 
-function spyOnEvent<V>(input: Util.WeakEventBus<V>) {
+export function spyOnEvent<V>(input: Util.WeakEventBus<V>) {
 	const spy = vi.fn()
 	input.subscribe(spy)
 	return spy
@@ -63,7 +63,7 @@ describe("Resource", () => {
 		expect(() => new Message(true)).toThrow("Invalid Input - Expected object but got 'true'")
 	})
 
-	it("should fire instance events", () => {
+	it("should dispatch onUpdate events", () => {
 		const message = new Message({ name: "John Doe", message: "Hello, world!" })
 		new Message({ name: "Jane Doe", message: "Hello, world!" }) // This should not fire an event
 
@@ -78,6 +78,19 @@ describe("Resource", () => {
 		vi.runAllTimers()
 		expect(updateSpy).toHaveBeenCalledTimes(2)
 		expect(updateSpy).toHaveBeenCalledWith(message)
+	})
+
+	it("should dispatch onGet events", () => {
+		const message = new Message({ name: "John Doe", message: "Hello, world!" })
+		const getSpy = spyOnEvent(Metadata.get(message).onGet)
+
+		vi.runAllTimers()
+		expect(getSpy).toHaveBeenCalledTimes(0)
+
+		const _get = message.message
+		vi.runAllTimers()
+		expect(getSpy).toHaveBeenCalledTimes(1)
+		expect(getSpy).toHaveBeenCalledWith(message)
 	})
 
 	it("should forward its events to the static events", () => {

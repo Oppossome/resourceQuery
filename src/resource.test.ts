@@ -107,6 +107,11 @@ describe("Resource", () => {
 		expect(updateSpy).toHaveBeenCalledWith(message)
 	})
 
+	/**
+	 * Currently, the point of this PR is to fix this test.
+	 * Issue was caused by me not understanding prototypal inheritance fully. 😅
+	 * - Additionally, Resource is a mess and needs to be refactored.
+	 */
 	it("shouldn't leak subresource methods to the parent", () => {
 		const parentTestSpy = vi.fn()
 		class ParentResource extends Resource.resourceExtend({
@@ -129,8 +134,8 @@ describe("Resource", () => {
 		new SubResource({ key: "123", value: "foo" })
 		new ParentResource({ key: "123" }).test()
 
-		expect(subTestSpy).toHaveBeenCalledTimes(0)
 		expect(parentTestSpy).toHaveBeenCalledTimes(1)
+		expect(subTestSpy).toHaveBeenCalledTimes(0)
 	})
 })
 

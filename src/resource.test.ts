@@ -106,6 +106,32 @@ describe("Resource", () => {
 		expect(updateSpy).toHaveBeenCalledTimes(2)
 		expect(updateSpy).toHaveBeenCalledWith(message)
 	})
+
+	it("shouldn't leak subresource methods to the parent", () => {
+		const parentTestSpy = vi.fn()
+		class ParentResource extends Resource.resourceExtend({
+			key: uniqueId(),
+		}) {
+			test() {
+				parentTestSpy()
+			}
+		}
+
+		const subTestSpy = vi.fn()
+		class SubResource extends ParentResource.resourceExtend({
+			value: z.string(),
+		}) {
+			override test() {
+				subTestSpy()
+			}
+		}
+
+		new SubResource({ key: "123", value: "foo" })
+		new ParentResource({ key: "123" }).test()
+
+		expect(subTestSpy).toHaveBeenCalledTimes(0)
+		expect(parentTestSpy).toHaveBeenCalledTimes(1)
+	})
 })
 
 describe("Resource.withUpdates", () => {

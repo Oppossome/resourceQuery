@@ -37,7 +37,7 @@ export class Query<Schema extends z.ZodSchema, Props extends any[]> extends Reso
 		this.params = params
 
 		// Weakly subscribe to the onGet event, and begin the query if it was called.
-		Metadata.get(this).onGet.subscribeUntil(() => {
+		Metadata.get(this).events.get.subscribeUntil(() => {
 			this.initialInvalidation()
 			return true
 		})
@@ -82,8 +82,8 @@ export class Query<Schema extends z.ZodSchema, Props extends any[]> extends Reso
 
 		// Reset the update managers to allow queries to utilize withUpdates.
 		const currentMetadata = Metadata.get(this)
-		currentMetadata.updateManagers.forEach((manager) => manager.cancel())
-		currentMetadata.updateManagers = []
+		currentMetadata.resetCallbacks.forEach((callback) => callback())
+		currentMetadata.resetCallbacks = []
 
 		// Run the query, and set the result if its returned.
 		try {

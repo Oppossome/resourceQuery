@@ -30,7 +30,6 @@ describe("Resource", () => {
 		override get message() {
 			return `${this.name}: ${super.message}`
 		}
-
 		override set message(value: string) {
 			super.message = value
 		}
@@ -63,48 +62,37 @@ describe("Resource", () => {
 		expect(() => new Message(true)).toThrow("Invalid Input - Expected object but got 'true'")
 	})
 
-	it("should dispatch onUpdate events", () => {
+	it("should dispatch set events", () => {
 		const message = new Message({ name: "John Doe", message: "Hello, world!" })
-		new Message({ name: "Jane Doe", message: "Hello, world!" }) // This should not fire an event
 
-		const updateSpy = spyOnEvent(Metadata.get(message).onUpdate)
+		const updateSpy = spyOnEvent(Metadata.get(message).events.set)
 
-		vi.runAllTimers()
+		new Message({ name: "John Doe", message: "Hello, foo!" }) // Should only trigger one update due to the name being the same
 		expect(updateSpy).toHaveBeenCalledTimes(1)
-		expect(updateSpy).toHaveBeenCalledWith(message)
+		expect(updateSpy).toHaveBeenCalledWith({ key: "message" })
 
-		message.message = "Hello, foo!"
-		message.message = "Hello, foo 2!" // Should debounce
-		vi.runAllTimers()
-		expect(updateSpy).toHaveBeenCalledTimes(2)
-		expect(updateSpy).toHaveBeenCalledWith(message)
+		new Message({ name: "John Doe", message: "Hello, foo!" }) // Should only trigger one update due to the name being the same
+		expect(updateSpy).toHaveBeenCalledTimes(1)
 	})
 
-	it("should dispatch onGet events", () => {
+	it("should dispatch get events", () => {
 		const message = new Message({ name: "John Doe", message: "Hello, world!" })
-		const getSpy = spyOnEvent(Metadata.get(message).onGet)
-
-		vi.runAllTimers()
+		const getSpy = spyOnEvent(Metadata.get(message).events.get)
 		expect(getSpy).toHaveBeenCalledTimes(0)
 
-		const _get = message.message
-		vi.runAllTimers()
+		message.name // Should trigger a get event
 		expect(getSpy).toHaveBeenCalledTimes(1)
-		expect(getSpy).toHaveBeenCalledWith(message)
+		expect(getSpy).toHaveBeenCalledWith({ key: "name" })
 	})
 
 	it("should forward its events to the static events", () => {
 		const message = new Message({ name: "John Doe", message: "Hello, world!" })
-		const updateSpy = spyOnEvent(Metadata.get(Message).onUpdate)
-
-		vi.runAllTimers()
-		expect(updateSpy).toHaveBeenCalledTimes(1)
-		expect(updateSpy).toHaveBeenCalledWith(message)
+		const updateSpy = spyOnEvent(Metadata.get(Message).events.set)
+		expect(updateSpy).toHaveBeenCalledTimes(0)
 
 		message.message = "Hello, foo!"
-		vi.runAllTimers()
-		expect(updateSpy).toHaveBeenCalledTimes(2)
-		expect(updateSpy).toHaveBeenCalledWith(message)
+		expect(updateSpy).toHaveBeenCalledTimes(1)
+		expect(updateSpy).toHaveBeenCalledWith({ resource: message, key: "message" })
 	})
 
 	/**

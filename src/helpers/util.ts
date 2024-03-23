@@ -9,6 +9,16 @@ export function wait(ms: number) {
 }
 
 /**
+ * Function that checks if two values are not equal.
+ * From: https://github.com/sveltejs/svelte/blob/7e5e4621948a2d930c855196f53fd56ab4b7cf79/packages/svelte/src/internal/client/reactivity/equality.js#L11
+ */
+export function safeNotEquals(a: unknown, b: unknown): boolean {
+	return a != a
+		? b == b
+		: a !== b || (a !== null && typeof a === "object") || typeof a === "function"
+}
+
+/**
  * Function that debounces a function call.
  * @param ms The amount of milliseconds to wait before calling the function.
  */
@@ -85,30 +95,16 @@ export class WeakValueMap<K, V extends object> {
 	}
 }
 
+type EventListener<V> = (value: V) => void
+
 /**
  * An event emitter that holds weak references to its subscribers.
  * @template Value The type of the value that will be dispatched.
- *
- * @example
- * const event = new WeakEvent<number>()
- *
- * class MyClass {
- *  constructor() {
- *   event.subscribe((value) => {
- *     console.log(value)
- *   })
- *  }
- * }
  */
 export class WeakEventBus<Value> {
 	#set = new Set<WeakRef<EventListener<Value>>>()
-	#debounce: ReturnType<typeof debounce>
 
-	constructor(ms: number = 0) {
-		this.#debounce = debounce(ms)
-
-		// Bind methods for convenience
-		this.subscribe = this.subscribe.bind(this)
+	constructor() {
 		this.dispatch = this.dispatch.bind(this)
 	}
 
@@ -144,12 +140,8 @@ export class WeakEventBus<Value> {
 	}
 
 	dispatch(value: Value) {
-		this.#debounce(() => {
-			for (const listener of this.#set) {
-				listener.deref()?.(value)
-			}
-		})
+		for (const listener of this.#set) {
+			listener.deref()?.(value)
+		}
 	}
 }
-
-type EventListener<V> = (value: V) => void

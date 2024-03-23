@@ -1,7 +1,7 @@
 import { z } from "zod"
 import { vi, it, expect, describe, beforeEach, afterEach } from "vitest"
 
-import { ResourceUpdateManager } from "./resourceUpdateManager"
+import { ResourceUpdateManager } from "./updateManager"
 import { Resource } from "./resource"
 
 beforeEach(() => {

@@ -2,7 +2,7 @@ import { z } from "zod"
 import { v4 as uuid } from "uuid"
 
 import { Metadata, Util } from "./helpers"
-import { ResourceUpdateManager, UpdateCallback } from "./resourceUpdateManager"
+import { ResourceUpdateManager, type UpdateCallback } from "./updateManager"
 
 /**
  * The current {@link ResourceMetadata} that is being updated.
@@ -30,49 +30,60 @@ function updateMetadata(resource: Resource, callback: () => void): ResourceMetad
 	return currentMetadata
 }
 
-/**
- * The input type for a resource.
- * @example
- * class User extends Resource.resourceExtend({
- * 	id: uniqueId(z.string()),
- * 	name: z.string(),
- * }) {
- * 	constructor(input: Input<typeof User>) {
- * 		super(input)
- * 	}
- * }
- */
-export type Input<This extends typeof Resource> = z.input<z.ZodObject<Metadata.Get<This>["schema"]>>
+interface ResourceFieldStorage {
+	onUpdate: Util.WeakEventBus<{ key: string }>
+	fields: Record<string, unknown>
+}
 
 interface ResourceMetadata {
-	fields: Record<string, unknown>
 	uniqueId: string
-	onGet: Util.WeakEventBus<Resource>
-	onUpdate: Util.WeakEventBus<Resource>
-	updateManagers: ResourceUpdateManager[]
+	fieldStorage?: ResourceFieldStorage
+	resetCallbacks: (() => void)[]
+	events: {
+		get: Util.WeakEventBus<{ key: string }>
+		set: Util.WeakEventBus<{ key: string }>
+	}
 }
 
 interface StaticResourceMetadata {
 	schema: z.ZodRawShape
 	storage: Util.WeakValueMap<string, Resource>
-	onUpdate: Util.WeakEventBus<Resource>
+	events: {
+		set: Util.WeakEventBus<{ resource: Resource; key: string }>
+	}
+}
+
+const BULK_FIELD_STORAGE = new Util.WeakValueMap<string, ResourceFieldStorage>()
+
+function getOrCreateFieldStorage(id: string) {
+	let fieldStorage = BULK_FIELD_STORAGE.get(id)
+	if (fieldStorage) return fieldStorage
+
+	fieldStorage = {
+		onUpdate: new Util.WeakEventBus(),
+		fields: {},
+	}
+
+	BULK_FIELD_STORAGE.set(id, fieldStorage)
+	return fieldStorage
 }
 
 export class Resource {
-	constructor(..._params: any[]) {
-		// Do absolutely nothing
+	constructor(_input: unknown) {
+		// Do absolutely nothing, we just want to override the constructor
 	}
 
 	[Metadata.key]: ResourceMetadata = {
-		fields: {},
 		uniqueId: uuid(),
-		onGet: new Util.WeakEventBus(100),
-		onUpdate: new Util.WeakEventBus(100),
-		updateManagers: [],
+		resetCallbacks: [],
+		events: {
+			get: new Util.WeakEventBus(),
+			set: new Util.WeakEventBus(),
+		},
 	}
 
 	withUpdates(updateCallback: UpdateCallback) {
-		Metadata.get(this).updateManagers.push(new ResourceUpdateManager(updateCallback))
+		Metadata.get(this).resetCallbacks.push(new ResourceUpdateManager(updateCallback).cancel)
 	}
 
 	/**
@@ -84,11 +95,11 @@ export class Resource {
 
 	// === Static Methods ===
 
-	static [Metadata.key] = {
+	static [Metadata.key]: StaticResourceMetadata = {
 		schema: {},
 		storage: new Util.WeakValueMap(),
-		onUpdate: new Util.WeakEventBus(),
-	} satisfies StaticResourceMetadata
+		events: { set: new Util.WeakEventBus() },
+	}
 
 	/**
 	 * Returns a zod schema that parses the input into this resource.
@@ -120,14 +131,13 @@ export class Resource {
 		this: This,
 		schema: Schema,
 	) {
-		const newMetadata = {
-			// For some reason, this is the only way to get the type to work correctly :/
+		const staticMetadata = {
 			schema: { ...Metadata.get(this).schema, ...schema } as Metadata.Get<This>["schema"] & Schema,
-			storage: new Util.WeakValueMap<string, Resource>(),
-			onUpdate: new Util.WeakEventBus(),
+			storage: new Util.WeakValueMap(),
+			events: { set: new Util.WeakEventBus() },
 		} satisfies StaticResourceMetadata
 
-		type Object = z.ZodObject<(typeof newMetadata)["schema"]>
+		type Object = z.ZodObject<(typeof staticMetadata)["schema"]>
 
 		// @ts-expect-error - Typescript considers this to be a mixin but we're abusing it
 		class Extension extends this {
@@ -138,49 +148,63 @@ export class Resource {
 					throw new Error(`Invalid Input - Expected object but got '${input}'`)
 				}
 
+				// https://stackoverflow.com/a/19470653 - How to get static properties of a class
+				// @ts-expect-error - We're abusing the constructor
+				if (staticMetadata !== Metadata.get(this.constructor)) return this
+
+				// If we're the last in the chain, we want to do some one-time things
 				// Parse the input to an intermediate object until we know the resourceId
-				const parsedInput = {} as z.output<Object>
+				const parsedInput = {} as Record<string, unknown>
 				const metadata = updateMetadata(this, () => {
-					for (const schemaKey in schema) {
-						const parsedValue = schema[schemaKey].parse(input[schemaKey])
+					for (const schemaKey in staticMetadata.schema) {
+						const parsedValue = staticMetadata.schema[schemaKey].parse(input[schemaKey])
 						parsedInput[schemaKey] = parsedValue
 					}
 				})
 
-				const cachedObject = newMetadata.storage.get(metadata.uniqueId)
-				const outputObject = cachedObject ?? this
-
-				// If we have a cached object, we want to cancel its update managers so we don't register duplicate events
-				if (cachedObject && cachedObject !== this) {
-					const currentMetadata = Metadata.get(cachedObject)
-					currentMetadata.updateManagers.forEach((manager) => manager.cancel())
-					currentMetadata.updateManagers = []
+				const cachedObject = staticMetadata.storage.get(metadata.uniqueId)
+				if (cachedObject) {
+					for (const key in parsedInput) {
+						// @ts-expect-error - It's alright, we're assigning known keys
+						cachedObject[key] = parsedInput[key]
+					}
+					return cachedObject
 				}
 
-				// @ts-expect-error - It's alright, we're assigning known keys
-				for (const key in parsedInput) outputObject[key] = parsedInput[key]
-				if (cachedObject) return cachedObject
+				const fieldStorage = getOrCreateFieldStorage(metadata.uniqueId)
+				metadata.fieldStorage = fieldStorage
 
 				// Do some one-time things for uncached objects
-				newMetadata.storage.set(metadata.uniqueId, this)
-				this[Metadata.key].onUpdate.subscribe(newMetadata.onUpdate.dispatch) // Forward
+				staticMetadata.storage.set(metadata.uniqueId, this)
+
+				fieldStorage.onUpdate.subscribe(metadata.events.set.dispatch)
+
+				metadata.events.set.subscribe((detail) =>
+					staticMetadata.events.set.dispatch({ resource: this, ...detail }),
+				)
+
+				// @ts-expect-error - It's alright, we're assigning known keys
+				for (const key in parsedInput) this[key] = parsedInput[key]
 			}
 
 			// Because our properties are getters and setters, we need to override the toJSON method to include them.
 			toJSON() {
 				const metadataObject = Metadata.get(this)
 				const output: Record<string, unknown> = super.toJSON()
-				for (const key in schema) output[key] = metadataObject.fields[key]
+				for (const key in schema) output[key] = metadataObject.fieldStorage?.fields[key]
 				return output
 			}
 
-			static [Metadata.key] = newMetadata
+			// === Static Methods ===
+
+			static [Metadata.key] = staticMetadata
 		}
 
 		/**
 		 * Assign getters and setters for each field in the schema.
 		 * Upsides:
 		 * - This is done to allow us to listen for changes to the fields.
+		 * - Lets us
 		 *
 		 * Downsides:
 		 * - Has the side effect of making the fields non-enumerable.
@@ -189,12 +213,17 @@ export class Resource {
 		for (const key in schema) {
 			Object.defineProperty(Extension.prototype, key, {
 				get() {
-					this[Metadata.key].onGet.dispatch(this)
-					return this[Metadata.key].fields[key]
+					const metadata: ResourceMetadata = Metadata.get(this)
+					if (!metadata.fieldStorage) throw new Error("fieldStorage is missing")
+					metadata.events.get.dispatch({ key })
+					return metadata.fieldStorage.fields[key]
 				},
 				set(value) {
-					this[Metadata.key].fields[key] = value
-					this[Metadata.key].onUpdate.dispatch(this)
+					const fieldStorage: ResourceFieldStorage | undefined = Metadata.get(this).fieldStorage
+					if (!fieldStorage) throw new Error("fieldStorage is missing")
+					if (!Util.safeNotEquals(fieldStorage.fields[key], value)) return
+					fieldStorage.onUpdate.dispatch({ key })
+					fieldStorage.fields[key] = value
 				},
 			})
 		}
@@ -202,10 +231,24 @@ export class Resource {
 		// Inject the new properties into the class
 		return Extension as Omit<typeof Extension, "new"> & {
 			new (input: z.input<Object>): This["prototype"] & z.output<Object>
-			[Metadata.key]: typeof newMetadata
+			[Metadata.key]: typeof staticMetadata
 		}
 	}
 }
+
+/**
+ * The input type for a resource.
+ * @example
+ * class User extends Resource.resourceExtend({
+ * 	id: uniqueId(z.string()),
+ * 	name: z.string(),
+ * }) {
+ * 	constructor(input: Input<typeof User>) {
+ * 		super(input)
+ * 	}
+ * }
+ */
+export type Input<This extends typeof Resource> = z.input<z.ZodObject<Metadata.Get<This>["schema"]>>
 
 /**
  * Returns a schema that assigns the parsed output to the current {@link UPDATING_METADATA}.

@@ -54,7 +54,7 @@ describe("Query", () => {
 
 	it("should call invalidate when resource props are accessed", async () => {
 		const query = getTestQuery(123)
-		const updateSpy = spyOnEvent(Metadata.get(query).onUpdate)
+		const updateSpy = spyOnEvent(Metadata.get(query).events.set)
 
 		expect(querySpy).toHaveBeenCalledTimes(0)
 		expect(updateSpy).toHaveBeenCalledTimes(0)
@@ -88,13 +88,13 @@ describe("Query", () => {
 		query.resolved()
 		await vi.runAllTimersAsync()
 
-		expect(queryMetadata.updateManagers.length).toBe(1)
+		expect(queryMetadata.resetCallbacks.length).toBe(1)
 		query.invalidate()
 
-		expect(queryMetadata.updateManagers.length).toBe(0)
+		expect(queryMetadata.resetCallbacks.length).toBe(0)
 		await vi.runAllTimersAsync()
 
-		expect(queryMetadata.updateManagers.length).toBe(1)
+		expect(queryMetadata.resetCallbacks.length).toBe(1)
 	})
 
 	it("should be possible to extend the Query class", async () => {

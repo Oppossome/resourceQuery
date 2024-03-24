@@ -17,6 +17,7 @@ export class ResourceUpdateManager {
 	#cacheIter = 0
 
 	constructor(protected updateCallback: UpdateCallback) {
+		this.cancel = this.cancel.bind(this)
 		this.#executeCallback()
 	}
 
@@ -82,7 +83,7 @@ export class ResourceUpdateManager {
 			}
 
 			this.#eventListeners.add(
-				Metadata.get(resource).onUpdate.subscribe((entry) => {
+				Metadata.get(resource).events.set.subscribe((entry) => {
 					// Appease the type checker
 					if (!cacheEntry) throw new Error("Cache Entry is missing")
 
@@ -124,7 +125,7 @@ export class ResourceUpdateManager {
 			}
 
 			this.#eventListeners.add(
-				Metadata.get(resource).onUpdate.subscribe((entry) => {
+				Metadata.get(resource).events.set.subscribe((entry) => {
 					if (!cacheEntry) throw new Error("Cache Entry is missing")
 					const entryIndex = cacheEntry.value.indexOf(entry as InstanceType<Resource>)
 					const wantsEntry = predicate(entry as InstanceType<Resource>)
